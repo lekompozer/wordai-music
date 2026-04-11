@@ -101,10 +101,11 @@ export interface PlaylistTrack {
     artist: string;
     audioUrl: string;
     durationSec: number;
-    source: 'youtube' | 'tiktok' | 'local';
+    source: 'youtube' | 'tiktok' | 'local' | 'facebook';
     thumbnailUrl?: string;
     youtubeId?: string;
     tiktokId?: string;
+    facebookId?: string;
 }
 
 export function trackMetaToPlaylist(meta: TrackMeta): PlaylistTrack {

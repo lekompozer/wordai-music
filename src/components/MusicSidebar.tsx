@@ -60,6 +60,7 @@ export interface SidebarTrack {
     thumbnailUrl?: string;
     youtubeId?: string;
     tiktokId?: string;
+    facebookId?: string;
 }
 
 export interface MusicSidebarProps {
@@ -515,7 +516,31 @@ export default function MusicSidebar({
             return;
         }
 
-        setUrlLinkError(isVietnamese ? 'URL không hợp lệ. Chỉ hỗ trợ YouTube.' : 'Invalid URL. Only YouTube links are supported.');
+        // Facebook: extract reel / video ID
+        const fbMatch = url.match(/facebook\.com\/(?:reel\/|watch\/?\?v=|video\.php\?v=)(\d+)/);
+        if (fbMatch) {
+            const fbId = fbMatch[1];
+            const track: PlaylistTrack = {
+                id: `fb_${fbId}`,
+                title: `Facebook Video – ${fbId}`,
+                artist: 'Facebook',
+                audioUrl: `fb:${fbId}`,
+                durationSec: 0,
+                source: 'facebook',
+                facebookId: fbId,
+            };
+            if (mode === 'play') {
+                onPlayTracks([{ ...track }]);
+                onClose();
+            } else {
+                setAddingTrack(track);
+                setPickerOpen(true);
+            }
+            setUrlLinkInput('');
+            return;
+        }
+
+        setUrlLinkError(isVietnamese ? 'URL không hợp lệ. Chỉ hỗ trợ YouTube và Facebook Reel.' : 'Invalid URL. Only YouTube and Facebook Reel links are supported.');
     }, [urlLinkInput, isVietnamese, onPlayTracks, onClose]);
 
     const handleImportUrl = useCallback(async () => {
@@ -1250,7 +1275,7 @@ export default function MusicSidebar({
                 {isVietnamese ? 'Tải file MP3 lên playlist' : 'Upload MP3 to playlist'}
             </button>
 
-            {/* NEW: Add YouTube / TikTok URL to playlist */}
+            {/* Add YouTube URL to playlist */}
             <div className={`rounded-2xl p-4 border flex flex-col gap-3 ${effectiveDark ? 'bg-white/[0.05] border-white/10' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center gap-2">
                     <Youtube className="w-4 h-4 text-red-500" />
@@ -1269,7 +1294,7 @@ export default function MusicSidebar({
                         value={urlLinkInput}
                         onChange={e => { setUrlLinkInput(e.target.value); setUrlLinkError(''); }}
                         onKeyDown={e => { if (e.key === 'Enter') handleAddUrlToPlaylist('add'); }}
-                        placeholder={isVietnamese ? 'https://youtube.com/watch?v=...' : 'https://youtube.com/watch?v=...'}
+                        placeholder="https://youtube.com/watch?v=..."
                         className={`flex-1 min-w-0 px-3 py-2 rounded-xl text-sm border outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 ${inputCls}`}
                     />
                 </div>
@@ -1291,6 +1316,57 @@ export default function MusicSidebar({
                         disabled={!urlLinkInput.trim()}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-white text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{ background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' }}
+                    >
+                        <Plus className="w-3 h-3" />
+                        {isVietnamese ? 'Thêm vào playlist' : 'Add to playlist'}
+                    </button>
+                </div>
+            </div>
+
+            {/* Add Facebook Reel URL to playlist */}
+            <div className={`rounded-2xl p-4 border flex flex-col gap-3 ${effectiveDark ? 'bg-white/[0.05] border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex items-center gap-2">
+                    {/* Facebook brand icon */}
+                    <div className="w-4 h-4 rounded bg-[#1877F2] flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold" style={{ fontSize: 10, lineHeight: 1 }}>f</span>
+                    </div>
+                    <span className={`text-sm font-semibold ${textPrimary}`}>
+                        {isVietnamese ? 'Thêm Facebook Reel vào playlist' : 'Add Facebook Reel to playlist'}
+                    </span>
+                </div>
+                <p className={`text-xs ${textSec}`}>
+                    {isVietnamese
+                        ? 'Dán link Facebook Reel — video phát trực tiếp trong playlist của bạn.'
+                        : 'Paste a Facebook Reel link — the video plays directly in your playlist.'}
+                </p>
+                <div className="flex gap-2">
+                    <input
+                        type="url"
+                        value={urlLinkInput}
+                        onChange={e => { setUrlLinkInput(e.target.value); setUrlLinkError(''); }}
+                        onKeyDown={e => { if (e.key === 'Enter') handleAddUrlToPlaylist('add'); }}
+                        placeholder="https://www.facebook.com/reel/..."
+                        className={`flex-1 min-w-0 px-3 py-2 rounded-xl text-sm border outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 ${inputCls}`}
+                    />
+                </div>
+                {urlLinkError && (
+                    <p className="text-xs text-red-400">{urlLinkError}</p>
+                )}
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => handleAddUrlToPlaylist('play')}
+                        disabled={!urlLinkInput.trim()}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-white text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' }}
+                    >
+                        <Play className="w-3 h-3" />
+                        {isVietnamese ? 'Phát ngay' : 'Play now'}
+                    </button>
+                    <button
+                        onClick={() => handleAddUrlToPlaylist('add')}
+                        disabled={!urlLinkInput.trim()}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-white text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{ background: 'linear-gradient(135deg, #1877F2 0%, #0a5bcc 100%)' }}
                     >
                         <Plus className="w-3 h-3" />
                         {isVietnamese ? 'Thêm vào playlist' : 'Add to playlist'}

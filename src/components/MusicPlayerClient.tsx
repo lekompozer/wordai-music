@@ -216,6 +216,7 @@ interface Track {
     thumbnailUrl?: string;
     youtubeId?: string;
     tiktokId?: string;
+    facebookId?: string;
 }
 
 interface SlideTrack extends Track {
@@ -353,6 +354,7 @@ async function loadChannel(slug: string): Promise<Track[]> {
                 const audioUrl: string = t.audioUrl ?? t.audio_url ?? '';
                 const youtubeId: string | undefined = t.youtubeId ?? (audioUrl.startsWith('yt:') ? audioUrl.slice(3) : undefined);
                 const tiktokId: string | undefined = t.tiktokId ?? (audioUrl.startsWith('tt:') ? audioUrl.slice(3) : undefined);
+                const facebookId: string | undefined = t.facebookId ?? (audioUrl.startsWith('fb:') ? audioUrl.slice(3) : undefined);
                 return {
                     id: t.id ?? t.track_id,
                     title: t.title,
@@ -363,6 +365,7 @@ async function loadChannel(slug: string): Promise<Track[]> {
                     thumbnailUrl: t.thumbnailUrl ?? t.thumbnail_url,
                     youtubeId,
                     tiktokId,
+                    facebookId,
                 };
             });
             channelCache[slug] = tracks;
@@ -377,11 +380,13 @@ async function loadChannel(slug: string): Promise<Track[]> {
             const audioUrl = (t.audioUrl ?? '') as string;
             const youtubeId = (t.youtubeId ?? (audioUrl.startsWith('yt:') ? audioUrl.slice(3) : undefined)) as string | undefined;
             const tiktokId = (t.tiktokId ?? (audioUrl.startsWith('tt:') ? audioUrl.slice(3) : undefined)) as string | undefined;
+            const facebookId = (t.facebookId ?? (audioUrl.startsWith('fb:') ? audioUrl.slice(3) : undefined)) as string | undefined;
             return {
                 ...t,
                 thumbnailUrl: (t.thumbnailUrl ?? t.coverUrl) as string | undefined,
                 youtubeId,
                 tiktokId,
+                facebookId,
             };
         });
         channelCache[slug] = tracks;
@@ -822,7 +827,7 @@ function MusicSlide({
 
     return (
         <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden select-none"
-            style={{ background: track.youtubeId && isActive ? '#000000' : trackTheme.background }}>
+            style={{ background: (track.youtubeId || track.facebookId) && isActive ? '#000000' : trackTheme.background }}>
 
             {/* Ambient pulse rings */}
             {isActive && (
@@ -859,9 +864,12 @@ function MusicSlide({
                 </div>
             </div>
 
-            {/* Center: Vinyl disc OR YouTube placeholder OR TikTok iframe */}
+            {/* Center: Vinyl disc OR YouTube placeholder OR Facebook placeholder OR TikTok iframe */}
             {track.youtubeId ? (
                 /* YouTube: global desktop iframe in MusicPlayerClient overlays this — empty placeholder */
+                <div className="absolute inset-0 bottom-[130px] z-10 pointer-events-none" />
+            ) : track.facebookId ? (
+                /* Facebook: global desktop iframe in MusicPlayerClient overlays this — empty placeholder */
                 <div className="absolute inset-0 bottom-[130px] z-10 pointer-events-none" />
             ) : track.tiktokId ? (
                 /* TikTok embed — overflow-hidden clips the TikTok footer bar */
@@ -1251,8 +1259,16 @@ export default function MusicPlayerClient() {
     const [desktopYtFading, setDesktopYtFading] = useState(false);
     const [desktopYtPlaying, setDesktopYtPlaying] = useState(false);
     const [desktopCardRect, setDesktopCardRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
-    const [ytFullMode, setYtFullMode] = useState(true);  // default full content mode for YouTube
+    const [ytFullMode, setYtFullMode] = useState(true);  // default full content mode for YouTube/Facebook
     const [mainContentRect, setMainContentRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+
+    // ── Global desktop Facebook iframe ─────────────────────────────────────
+    // Uses a standard <iframe> (no postMessage API — just update src on track switch).
+    const desktopFbIframeRef = useRef<HTMLIFrameElement | null>(null);
+    const [desktopFbEmbedUrl, setDesktopFbEmbedUrl] = useState<string | null>(null);
+    const [desktopFbFading, setDesktopFbFading] = useState(false);
+    const desktopFbEndedFiredRef = useRef(false);
+    const desktopFbEndedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const fadingOutRef = useRef<HTMLAudioElement | null>(null); // holds audio being faded out during crossfade
@@ -1303,6 +1319,7 @@ export default function MusicPlayerClient() {
                     ...t,
                     youtubeId: t.youtubeId ?? (t.audioUrl.startsWith('yt:') ? t.audioUrl.slice(3) : undefined),
                     tiktokId: t.tiktokId ?? (t.audioUrl.startsWith('tt:') ? t.audioUrl.slice(3) : undefined),
+                    facebookId: t.facebookId ?? (t.audioUrl.startsWith('fb:') ? t.audioUrl.slice(3) : undefined),
                 })),
             }));
             setPlaylistOptions(normalizedLists);
@@ -1385,6 +1402,7 @@ export default function MusicPlayerClient() {
                 source: tr.source, thumbnailUrl: tr.thumbnailUrl,
                 youtubeId: tr.youtubeId,
                 tiktokId: tr.tiktokId,
+                facebookId: tr.facebookId,
                 channelSlug: 'playlist',
             }));
             setSlides(newSlides);
@@ -1424,10 +1442,11 @@ export default function MusicPlayerClient() {
         const newSlides: SlideTrack[] = mostRecent.tracks.slice(0, MAX_SLIDES).map(t => ({
             id: t.id, title: t.title, artist: t.artist,
             audioUrl: t.audioUrl, durationSec: t.durationSec,
-            source: t.source as 'youtube' | 'tiktok' | 'local',
+            source: t.source as 'youtube' | 'tiktok' | 'local' | 'facebook',
             thumbnailUrl: t.thumbnailUrl,
             youtubeId: t.youtubeId,
             tiktokId: t.tiktokId,
+            facebookId: t.facebookId,
             channelSlug: 'playlist',
         }));
         saveLastCtx({ type: 'playlist', id: mostRecent.id, name: mostRecent.name, tracks: mostRecent.tracks.slice(0, 50) });
@@ -1484,6 +1503,7 @@ export default function MusicPlayerClient() {
                                                 source: t.source, thumbnailUrl: t.thumbnailUrl,
                                                 youtubeId: t.youtubeId,
                                                 tiktokId: t.tiktokId,
+                                                facebookId: t.facebookId,
                                                 channelSlug: 'playlist',
                                             }));
                                             setSlides(prev => [...prev, ...newSlides]);
@@ -1531,8 +1551,9 @@ export default function MusicPlayerClient() {
         const track = slides[activeIndex];
         if (!track?.audioUrl) return;
 
-        // YouTube embed tracks: no audio element needed — the iframe handles playback
-        if (track.youtubeId || track.tiktokId || track.audioUrl.startsWith('yt:') || track.audioUrl.startsWith('tt:')) {
+        // YouTube/TikTok/Facebook embed tracks: no audio element needed — the iframe handles playback
+        if (track.youtubeId || track.tiktokId || track.facebookId ||
+            track.audioUrl.startsWith('yt:') || track.audioUrl.startsWith('tt:') || track.audioUrl.startsWith('fb:')) {
             if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; audioRef.current = null; }
             setAudioEl(null);
             setCurrentTime(0);
@@ -1890,11 +1911,11 @@ export default function MusicPlayerClient() {
         return () => { ro.disconnect(); window.removeEventListener('resize', getRect); };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Reset full video mode: true (full) for YouTube, false (card) for MP3/TikTok.
+    // Reset full video mode: true (full) for YouTube/Facebook, false (card) for MP3/TikTok.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
-        setYtFullMode(!!slides[activeIndex]?.youtubeId);
-    }, [slides[activeIndex]?.youtubeId]); // eslint-disable-line react-hooks/exhaustive-deps
+        setYtFullMode(!!(slides[activeIndex]?.youtubeId || slides[activeIndex]?.facebookId));
+    }, [slides[activeIndex]?.youtubeId, slides[activeIndex]?.facebookId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Track active card's bounding rect for position:fixed iframe placement.
     // Runs after snap scroll settles so getBoundingClientRect() is accurate.
@@ -1997,6 +2018,44 @@ export default function MusicPlayerClient() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeSlideYoutubeId, activeSlideTrackId, activeSlideDuration]);
 
+    // ── Global desktop Facebook iframe management ────────────────────────────
+
+    const activeSlideFacebookId = slides[activeIndex]?.facebookId;
+    useEffect(() => {
+        if (!activeSlideFacebookId) {
+            setDesktopFbFading(true);
+            const t = setTimeout(() => { setDesktopFbEmbedUrl(null); setDesktopFbFading(false); }, 600);
+            return () => clearTimeout(t);
+        }
+
+        const fbId = activeSlideFacebookId;
+        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(`https://www.facebook.com/reel/${fbId}`)}&show_text=false&autoplay=1&mute=0`;
+        setDesktopFbFading(false);
+        setDesktopFbEmbedUrl(embedUrl);
+        desktopFbEndedFiredRef.current = false;
+
+        if (desktopFbEndedTimerRef.current) clearTimeout(desktopFbEndedTimerRef.current);
+
+        // Facebook doesn't expose an ended event — use duration-based fallback timer
+        const track = slides[activeIndex];
+        const fallbackMs = (track?.durationSec ?? 0) > 10 ? ((track?.durationSec ?? 0) + 5) * 1000 : 600000;
+        const fallbackTimer = setTimeout(() => {
+            if (desktopFbEndedFiredRef.current) return;
+            desktopFbEndedFiredRef.current = true;
+            setDesktopFbFading(true);
+            desktopFbEndedTimerRef.current = setTimeout(() => {
+                crossfadeAdvanceRef.current = true;
+                advanceToNext();
+            }, 600);
+        }, fallbackMs);
+
+        return () => {
+            clearTimeout(fallbackTimer);
+            if (desktopFbEndedTimerRef.current) clearTimeout(desktopFbEndedTimerRef.current);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeSlideFacebookId]);
+
     // ── Channel switch ───────────────────────────────────────────────────────
 
     const handleSelectChannel = useCallback((slug: ChannelSlug) => {
@@ -2084,6 +2143,7 @@ export default function MusicPlayerClient() {
             thumbnailUrl: t.thumbnailUrl,
             youtubeId: t.youtubeId,
             tiktokId: t.tiktokId,
+            facebookId: t.facebookId,
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: orderedTracks.slice(0, 50) });
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
@@ -2114,6 +2174,7 @@ export default function MusicPlayerClient() {
             thumbnailUrl: t.thumbnailUrl,
             youtubeId: t.youtubeId,
             tiktokId: t.tiktokId,
+            facebookId: t.facebookId,
         }));
     }, []);
 
@@ -2320,6 +2381,77 @@ export default function MusicPlayerClient() {
                                 </div>
                             </div>
                         </>
+                    )}
+                </div>
+            )}
+
+            {/* Global Desktop Facebook Iframe */}
+            {desktopFbEmbedUrl && (ytFullMode ? mainContentRect : desktopCardRect) && (
+                <div
+                    className={`transition-opacity duration-[600ms] ${activeSlide?.facebookId && !desktopFbFading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                    style={{
+                        position: 'fixed',
+                        left: ytFullMode ? mainContentRect!.left : desktopCardRect!.left,
+                        top: ytFullMode ? mainContentRect!.top : desktopCardRect!.top + 88,
+                        width: ytFullMode ? mainContentRect!.width : desktopCardRect!.width,
+                        height: ytFullMode ? mainContentRect!.height : Math.max(0, desktopCardRect!.height - 88 - 130),
+                        zIndex: 20,
+                        background: '#000',
+                    }}
+                    onClick={e => e.stopPropagation()}
+                >
+                    <iframe
+                        ref={desktopFbIframeRef}
+                        key={desktopFbEmbedUrl}
+                        src={desktopFbEmbedUrl}
+                        className="w-full h-full"
+                        style={{ border: 'none' }}
+                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                        allowFullScreen
+                        scrolling="no"
+                    />
+                    {/* Fullscreen info overlay */}
+                    {ytFullMode && activeSlide?.facebookId && (
+                        <>
+                            <button
+                                className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors border border-white/15"
+                                onClick={() => setYtFullMode(false)}
+                            >
+                                <Minimize2 className="w-4 h-4" />
+                            </button>
+                            <div
+                                className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none"
+                                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 55%, transparent 100%)', padding: '56px 24px 24px' }}
+                            >
+                                <div className="flex items-end justify-between">
+                                    <div className="flex-1 min-w-0 mr-4">
+                                        <p className="text-white font-bold text-xl leading-tight truncate drop-shadow">{activeSlide.title}</p>
+                                        {activeSlide.artist && <p className="text-white/65 text-sm mt-1 truncate">{activeSlide.artist}</p>}
+                                    </div>
+                                    <div className="pointer-events-auto flex items-center gap-3 flex-shrink-0">
+                                        <button onClick={() => handleLike(activeSlide.id)}>
+                                            <div className={`w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/10 transition-colors ${likedIds.has(activeSlide.id) ? 'text-red-400' : 'text-white'}`}>
+                                                <Heart className="w-5 h-5" fill={likedIds.has(activeSlide.id) ? 'currentColor' : 'none'} />
+                                            </div>
+                                        </button>
+                                        <button onClick={() => handleSave(activeSlide.id)}>
+                                            <div className={`w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/10 transition-colors ${savedIds.has(activeSlide.id) ? 'text-yellow-400' : 'text-white'}`}>
+                                                {savedIds.has(activeSlide.id) ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    {/* Card-mode maximize button */}
+                    {!ytFullMode && activeSlide?.facebookId && (
+                        <button
+                            className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors border border-white/15"
+                            onClick={() => setYtFullMode(true)}
+                        >
+                            <Maximize2 className="w-4 h-4" />
+                        </button>
                     )}
                 </div>
             )}
