@@ -894,8 +894,8 @@ function MusicSlide({
                 </div>
             )}
 
-            {/* Audio visualizer — hidden for YouTube/TikTok tracks */}
-            {!track.youtubeId && !track.tiktokId && (
+            {/* Audio visualizer — hidden for YouTube/TikTok/Facebook tracks */}
+            {!track.youtubeId && !track.tiktokId && !track.facebookId && (
                 <div className="absolute bottom-[176px] inset-x-0 h-[80px] md:h-[120px] z-[5] pointer-events-none">
                     {isActive && audioEl
                         ? <AudioVisualizer audioEl={audioEl} accent={trackTheme.accent} />
@@ -941,8 +941,8 @@ function MusicSlide({
                     </div>
                 )}
 
-                {/* Progress bar + inline volume — hidden for YouTube embed tracks */}
-                {!track.youtubeId && !track.tiktokId && (
+                {/* Progress bar + inline volume — hidden for YouTube/Facebook/TikTok embed tracks */}
+                {!track.youtubeId && !track.tiktokId && !track.facebookId && (
                     <div className="mt-3 flex items-center gap-1.5">
                         <div
                             className="flex-1 relative flex items-center cursor-pointer"
@@ -1911,10 +1911,10 @@ export default function MusicPlayerClient() {
         return () => { ro.disconnect(); window.removeEventListener('resize', getRect); };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Reset full video mode: true (full) for YouTube/Facebook, false (card) for MP3/TikTok.
+    // Reset full video mode: true (full) for YouTube only; Facebook defaults to card mode to keep name/controls visible below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
-        setYtFullMode(!!(slides[activeIndex]?.youtubeId || slides[activeIndex]?.facebookId));
+        setYtFullMode(!!slides[activeIndex]?.youtubeId);
     }, [slides[activeIndex]?.youtubeId, slides[activeIndex]?.facebookId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Track active card's bounding rect for position:fixed iframe placement.
@@ -2441,6 +2441,15 @@ export default function MusicPlayerClient() {
                         allowFullScreen
                         scrolling="no"
                     />
+                    {/* Tap-to-unmute hint — pointer-events-none so clicks pass through to the FB iframe */}
+                    {activeSlide?.facebookId && !desktopFbFading && (
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none select-none">
+                            <div className="flex items-center gap-2 rounded-full bg-black/70 backdrop-blur-md px-4 py-2 text-white text-xs font-medium shadow-xl ring-1 ring-white/10">
+                                <Volume2 className="w-3.5 h-3.5 text-blue-400" />
+                                <span>Tap video to unmute</span>
+                            </div>
+                        </div>
+                    )}
                     {/* Fullscreen info overlay */}
                     {ytFullMode && activeSlide?.facebookId && (
                         <>
