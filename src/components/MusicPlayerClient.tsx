@@ -1272,7 +1272,7 @@ export default function MusicPlayerClient() {
     const desktopFbIframeRef = useRef<HTMLIFrameElement | null>(null);
     const [desktopFbEmbedUrl, setDesktopFbEmbedUrl] = useState<string | null>(null);
     const [desktopFbFading, setDesktopFbFading] = useState(false);
-    const desktopFbGestureRef = useRef(false); // true when track switch was triggered by a user gesture
+    const desktopFbCurrentIdRef = useRef<string | null>(null); // fbId currently loaded into the iframe
     const desktopFbEndedFiredRef = useRef(false);
     const desktopFbEndedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -2038,23 +2038,18 @@ export default function MusicPlayerClient() {
             return () => clearTimeout(t);
         }
 
-        const fbId = activeSlideFacebookId;
-        const isReel = !!slides[activeIndex]?.facebookIsReel;
-        const fbHref = isReel
-            ? `https://www.facebook.com/reel/${fbId}`
-            : `https://www.facebook.com/watch?v=${fbId}`;
-        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fbHref)}&show_text=false&autoplay=1&muted=${desktopFbGestureRef.current ? '0' : '1'}&loop=0`;
-        const isGesture = desktopFbGestureRef.current;
-        desktopFbGestureRef.current = false;
-        setDesktopFbFading(false);
-        setDesktopFbEmbedUrl(embedUrl);
-        desktopFbEndedFiredRef.current = false;
-
-        // When triggered by a user gesture, click the iframe after it loads to transfer
-        // user activation — browsers may allow unmuted autoplay on the first interaction.
-        if (isGesture) {
-            setTimeout(() => { desktopFbIframeRef.current?.click(); }, 500);
+        // If the gesture handler already loaded this fbId directly into the iframe, skip the src update
+        // (changing src again would remount the FB player and lose the unmuted state).
+        if (desktopFbCurrentIdRef.current !== activeSlideFacebookId) {
+            const fbId = activeSlideFacebookId;
+            const isReel = !!slides[activeIndex]?.facebookIsReel;
+            const embedUrl = buildFbEmbedUrl(fbId, isReel, true /* muted — auto-advance, no gesture */);
+            desktopFbCurrentIdRef.current = fbId;
+            if (desktopFbIframeRef.current) desktopFbIframeRef.current.src = embedUrl;
+            setDesktopFbEmbedUrl(embedUrl);
         }
+        setDesktopFbFading(false);
+        desktopFbEndedFiredRef.current = false;
 
         if (desktopFbEndedTimerRef.current) clearTimeout(desktopFbEndedTimerRef.current);
 
@@ -2093,6 +2088,23 @@ export default function MusicPlayerClient() {
 
     // ── Channel switch ───────────────────────────────────────────────────────
 
+    // Builds a FB embed URL. muted=0 requires a synchronous user-gesture context to play with sound.
+    const buildFbEmbedUrl = useCallback((fbId: string, isReel: boolean, muted: boolean) => {
+        const fbHref = isReel ? `https://www.facebook.com/reel/${fbId}` : `https://www.facebook.com/watch?v=${fbId}`;
+        return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fbHref)}&show_text=false&autoplay=1&muted=${muted ? '1' : '0'}&loop=0`;
+    }, []);
+
+    // Sets the FB iframe src directly via ref (synchronous — safe inside click handlers)
+    // and updates React state so the overlay becomes visible.
+    const setFbSrcDirectly = useCallback((fbId: string, isReel: boolean) => {
+        const url = buildFbEmbedUrl(fbId, isReel, false /* unmuted — called from gesture context */);
+        desktopFbCurrentIdRef.current = fbId;
+        desktopFbEndedFiredRef.current = false;
+        if (desktopFbIframeRef.current) desktopFbIframeRef.current.src = url;
+        setDesktopFbEmbedUrl(url);
+        setDesktopFbFading(false);
+    }, [buildFbEmbedUrl]);
+
     const stopIframeMedia = useCallback(() => {
         // Stop YouTube iframe audio
         try {
@@ -2104,6 +2116,7 @@ export default function MusicPlayerClient() {
         setDesktopYtPlaying(false);
         desktopLastLoadedYtIdRef.current = null;
         // Stop Facebook iframe audio
+        desktopFbCurrentIdRef.current = null;
         setDesktopFbEmbedUrl(null);
         setDesktopFbFading(false);
     }, []);
@@ -2111,7 +2124,6 @@ export default function MusicPlayerClient() {
     const handleSelectChannel = useCallback((slug: ChannelSlug) => {
         if (slug === selectedChannel) return;
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
-        desktopFbGestureRef.current = true; // sidebar channel click is a user gesture
         stopIframeMedia();
         setSelectedChannel(slug);
         setCurrentTime(0);
@@ -2200,8 +2212,12 @@ export default function MusicPlayerClient() {
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: orderedTracks.slice(0, 50) });
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
-        desktopFbGestureRef.current = true; // sidebar click is a user gesture
         stopIframeMedia();
+        // If first track is Facebook, set iframe src synchronously inside this gesture handler
+        // so the browser grants unmuted autoplay permission.
+        if (newSlides[0]?.facebookId) {
+            setFbSrcDirectly(newSlides[0].facebookId, !!newSlides[0].facebookIsReel);
+        }
         // Prevent IntersectionObserver from interfering during slide array swap
         isSwitchingChannel.current = true;
         slideRefs.current = [];
@@ -2460,8 +2476,7 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopFbIframeRef}
-                        key={desktopFbEmbedUrl}
-                        src={desktopFbEmbedUrl}
+                        src={desktopFbEmbedUrl ?? undefined}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
