@@ -1252,7 +1252,6 @@ export default function MusicPlayerClient() {
     const [desktopYtPlaying, setDesktopYtPlaying] = useState(false);
     const [desktopCardRect, setDesktopCardRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
     const [ytFullMode, setYtFullMode] = useState(true);  // default full content mode for YouTube
-    const mainContentRef = useRef<HTMLDivElement>(null);
     const [mainContentRect, setMainContentRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -1875,18 +1874,20 @@ export default function MusicPlayerClient() {
     // ── Global desktop YouTube iframe management ─────────────────────────────────────────────────────
 
     // Track main content area rect — used for fullscreen YouTube mode positioning.
+    // Uses feedRef (the scrollable div INSIDE the lg:pl-[300px] wrapper) so the
+    // bounding rect starts after the Music Library sidebar, not at the outer div edge.
     useEffect(() => {
-        const el = mainContentRef.current;
-        if (!el) return;
-        const update = () => {
+        const getRect = () => {
+            const el = feedRef.current;
+            if (!el) return;
             const r = el.getBoundingClientRect();
             setMainContentRect({ left: r.left, top: r.top, width: r.width, height: r.height });
         };
-        update();
-        const ro = new ResizeObserver(update);
-        ro.observe(el);
-        window.addEventListener('resize', update);
-        return () => { ro.disconnect(); window.removeEventListener('resize', update); };
+        getRect();
+        const ro = new ResizeObserver(getRect);
+        if (feedRef.current) ro.observe(feedRef.current);
+        window.addEventListener('resize', getRect);
+        return () => { ro.disconnect(); window.removeEventListener('resize', getRect); };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Reset full video mode: true (full) for YouTube, false (card) for MP3/TikTok.
@@ -2148,7 +2149,7 @@ export default function MusicPlayerClient() {
             />
 
             {/* Main content wrapper: music sidebar (300 px) on lg+, track list (256 px) on xl+ */}
-            <div ref={mainContentRef} className="h-full flex lg:pl-[300px]">
+            <div className="h-full flex lg:pl-[300px]">
 
                 {/* Scrollable feed */}
                 <div
