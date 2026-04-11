@@ -2042,7 +2042,7 @@ export default function MusicPlayerClient() {
         const fbHref = isReel
             ? `https://www.facebook.com/reel/${fbId}`
             : `https://www.facebook.com/watch?v=${fbId}`;
-        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fbHref)}&show_text=false&autoplay=1&mute=0`;
+        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fbHref)}&show_text=false&autoplay=1&muted=1`;
         setDesktopFbFading(false);
         setDesktopFbEmbedUrl(embedUrl);
         desktopFbEndedFiredRef.current = false;
@@ -2456,12 +2456,12 @@ export default function MusicPlayerClient() {
                         allowFullScreen
                         scrolling="no"
                     />
-                    {/* Tap-to-unmute hint — pointer-events-none so clicks pass through to the FB iframe */}
+                    {/* Unmute hint — pointer-events-none so clicks pass through to the FB iframe */}
                     {activeSlide?.facebookId && !desktopFbFading && (
                         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none select-none">
                             <div className="flex items-center gap-2 rounded-full bg-black/70 backdrop-blur-md px-4 py-2 text-white text-xs font-medium shadow-xl ring-1 ring-white/10">
                                 <Volume2 className="w-3.5 h-3.5 text-blue-400" />
-                                <span>Tap video to unmute</span>
+                                <span>Click 🔊 in video to unmute</span>
                             </div>
                         </div>
                     )}
