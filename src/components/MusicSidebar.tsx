@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useContext } from 'react';
 import { createPortal } from 'react-dom';
-import { HomeSidebarCollapsedCtx } from './HomeShell';
+import { HomeSidebarCollapsedCtx } from '@/components/HomeShell';
 import {
     X, Search, Music2, AudioWaveform, Shuffle, ChevronDown, ChevronRight, ChevronLeft, Play, Plus,
     Trash2, ListMusic, Youtube, Link as LinkIcon, Loader2,
@@ -380,6 +380,7 @@ export default function MusicSidebar({
                     ...t,
                     youtubeId: t.youtubeId ?? (t.audioUrl.startsWith('yt:') ? t.audioUrl.slice(3) : undefined),
                     tiktokId: t.tiktokId ?? (t.audioUrl.startsWith('tt:') ? t.audioUrl.slice(3) : undefined),
+                    facebookId: t.facebookId ?? (t.audioUrl.startsWith('fb:') ? t.audioUrl.slice(3) : undefined),
                 })),
             }));
             setPlaylists(normalizedLists);
