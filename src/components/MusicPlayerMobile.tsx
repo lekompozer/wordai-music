@@ -57,7 +57,7 @@ type AnyChannelMeta = { slug: string; name: string; label: string; accent: strin
 interface Track {
     id: string; title: string; artist: string;
     audioUrl: string; durationSec: number; source: string; thumbnailUrl?: string;
-    youtubeId?: string; tiktokId?: string; facebookId?: string;
+    youtubeId?: string; tiktokId?: string; facebookId?: string; facebookIsReel?: boolean;
 }
 interface SlideTrack extends Track { channelSlug: ChannelSlug; }
 
@@ -126,7 +126,8 @@ async function loadChannel(slug: string): Promise<Track[]> {
                 const audioUrl = ((tr.audioUrl ?? tr.audio_url) ?? '') as string;
                 const youtubeId = ((tr as any).youtubeId ?? (audioUrl.startsWith('yt:') ? audioUrl.slice(3) : undefined)) as string | undefined;
                 const tiktokId = ((tr as any).tiktokId ?? (audioUrl.startsWith('tt:') ? audioUrl.slice(3) : undefined)) as string | undefined;
-                const facebookId = ((tr as any).facebookId ?? (audioUrl.startsWith('fb:') ? audioUrl.slice(3) : undefined)) as string | undefined;
+                const facebookId = ((tr as any).facebookId ?? (audioUrl.startsWith('fbreel:') ? audioUrl.slice(7) : audioUrl.startsWith('fb:') ? audioUrl.slice(3) : undefined)) as string | undefined;
+                const facebookIsReel = audioUrl.startsWith('fbreel:') ? true : undefined;
                 return {
                     id: (tr.id ?? tr.track_id) as string,
                     title: tr.title as string,
@@ -138,6 +139,7 @@ async function loadChannel(slug: string): Promise<Track[]> {
                     youtubeId,
                     tiktokId,
                     facebookId,
+                    facebookIsReel,
                 };
             });
             channelCache[slug] = tracks; return tracks;
@@ -149,13 +151,15 @@ async function loadChannel(slug: string): Promise<Track[]> {
             const audioUrl = (tr.audioUrl ?? '') as string;
             const youtubeId = ((tr.youtubeId as string | undefined) ?? (audioUrl.startsWith('yt:') ? audioUrl.slice(3) : undefined));
             const tiktokId = ((tr.tiktokId as string | undefined) ?? (audioUrl.startsWith('tt:') ? audioUrl.slice(3) : undefined));
-            const facebookId = ((tr.facebookId as string | undefined) ?? (audioUrl.startsWith('fb:') ? audioUrl.slice(3) : undefined));
+            const facebookId = ((tr.facebookId as string | undefined) ?? (audioUrl.startsWith('fbreel:') ? audioUrl.slice(7) : audioUrl.startsWith('fb:') ? audioUrl.slice(3) : undefined));
+            const facebookIsReel = audioUrl.startsWith('fbreel:') ? true : undefined;
             return {
                 ...tr,
                 thumbnailUrl: (tr.thumbnailUrl ?? tr.coverUrl) as string | undefined,
                 youtubeId,
                 tiktokId,
                 facebookId,
+                facebookIsReel,
             };
         }) as unknown as Track[];
         channelCache[slug] = tracks; return tracks;
@@ -541,7 +545,9 @@ export default function MusicPlayerMobile() {
             return () => clearTimeout(t);
         }
         const fbId = activeSlideFbId;
-        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(`https://www.facebook.com/watch?v=${fbId}`)}&show_text=false&autoplay=1&mute=0`;
+        const isReel = !!slides[activeIndex]?.facebookIsReel;
+        const fbHref = isReel ? `https://www.facebook.com/reel/${fbId}` : `https://www.facebook.com/watch?v=${fbId}`;
+        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fbHref)}&show_text=false&autoplay=1&mute=0`;
         setMobileFbFading(false);
         setMobileFbEmbedUrl(embedUrl);
         mobileFbEndedFiredRef.current = false;
@@ -705,7 +711,7 @@ export default function MusicPlayerMobile() {
             // YouTube/TikTok/Facebook tracks: just advance the index — the iframe handles playback.
             // Do NOT clear audio.src here — the activeIndex useEffect will set the silent loop,
             // keeping the OS MediaSession alive through the track transition.
-            if (nextTrack.youtubeId || nextTrack.tiktokId || nextTrack.facebookId || url.startsWith('yt:') || url.startsWith('tt:') || url.startsWith('fb:')) {
+            if (nextTrack.youtubeId || nextTrack.tiktokId || nextTrack.facebookId || url.startsWith('yt:') || url.startsWith('tt:') || url.startsWith('fb:') || url.startsWith('fbreel:')) {
                 srcSetByEndedRef.current = true;
                 currentUrlRef.current = '';
                 setActiveIndex(nextIdx);
@@ -961,7 +967,8 @@ export default function MusicPlayerMobile() {
                 channelSlug: 'playlist',
                 youtubeId: tr.audioUrl.startsWith('yt:') ? tr.audioUrl.slice(3) : (tr as any).youtubeId,
                 tiktokId: tr.audioUrl.startsWith('tt:') ? tr.audioUrl.slice(3) : (tr as any).tiktokId,
-                facebookId: tr.audioUrl.startsWith('fb:') ? tr.audioUrl.slice(3) : (tr as any).facebookId,
+                facebookId: tr.audioUrl.startsWith('fbreel:') ? tr.audioUrl.slice(7) : tr.audioUrl.startsWith('fb:') ? tr.audioUrl.slice(3) : (tr as any).facebookId,
+                facebookIsReel: tr.audioUrl.startsWith('fbreel:') ? true : undefined,
             }));
             setSlides(newSlides); setSelectedChannel('playlist' as ChannelSlug); setIsLoading(false);
         } else {
@@ -989,7 +996,8 @@ export default function MusicPlayerMobile() {
             thumbnailUrl: tr.thumbnailUrl, channelSlug: 'playlist',
             youtubeId: tr.audioUrl.startsWith('yt:') ? tr.audioUrl.slice(3) : (tr as any).youtubeId,
             tiktokId: tr.audioUrl.startsWith('tt:') ? tr.audioUrl.slice(3) : (tr as any).tiktokId,
-            facebookId: tr.audioUrl.startsWith('fb:') ? tr.audioUrl.slice(3) : (tr as any).facebookId,
+            facebookId: tr.audioUrl.startsWith('fbreel:') ? tr.audioUrl.slice(7) : tr.audioUrl.startsWith('fb:') ? tr.audioUrl.slice(3) : (tr as any).facebookId,
+            facebookIsReel: tr.audioUrl.startsWith('fbreel:') ? true : undefined,
         }));
         saveLastCtx({ type: 'playlist', id: mostRecent.id, name: mostRecent.name, tracks: mostRecent.tracks.slice(0, 50) });
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; currentUrlRef.current = ''; }
@@ -1052,7 +1060,8 @@ export default function MusicPlayerMobile() {
             durationSec: tr.durationSec, source: tr.source, channelSlug: 'playlist', thumbnailUrl: tr.thumbnailUrl,
             youtubeId: tr.audioUrl.startsWith('yt:') ? tr.audioUrl.slice(3) : (tr as any).youtubeId,
             tiktokId: tr.audioUrl.startsWith('tt:') ? tr.audioUrl.slice(3) : (tr as any).tiktokId,
-            facebookId: tr.audioUrl.startsWith('fb:') ? tr.audioUrl.slice(3) : (tr as any).facebookId,
+            facebookId: tr.audioUrl.startsWith('fbreel:') ? tr.audioUrl.slice(7) : tr.audioUrl.startsWith('fb:') ? tr.audioUrl.slice(3) : (tr as any).facebookId,
+            facebookIsReel: tr.audioUrl.startsWith('fbreel:') ? true : undefined,
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: ordered.slice(0, 50) });
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; currentUrlRef.current = ''; }

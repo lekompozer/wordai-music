@@ -106,6 +106,7 @@ export interface PlaylistTrack {
     youtubeId?: string;
     tiktokId?: string;
     facebookId?: string;
+    facebookIsReel?: boolean;
 }
 
 export function trackMetaToPlaylist(meta: TrackMeta): PlaylistTrack {

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useContext } from 'react';
 import { createPortal } from 'react-dom';
-import { HomeSidebarCollapsedCtx } from '@/components/HomeShell';
+import { HomeSidebarCollapsedCtx } from './HomeShell';
 import {
     X, Search, Music2, AudioWaveform, Shuffle, ChevronDown, ChevronRight, ChevronLeft, Play, Plus,
     Trash2, ListMusic, Youtube, Link as LinkIcon, Loader2,
@@ -61,6 +61,7 @@ export interface SidebarTrack {
     youtubeId?: string;
     tiktokId?: string;
     facebookId?: string;
+    facebookIsReel?: boolean;
 }
 
 export interface MusicSidebarProps {
@@ -380,7 +381,8 @@ export default function MusicSidebar({
                     ...t,
                     youtubeId: t.youtubeId ?? (t.audioUrl.startsWith('yt:') ? t.audioUrl.slice(3) : undefined),
                     tiktokId: t.tiktokId ?? (t.audioUrl.startsWith('tt:') ? t.audioUrl.slice(3) : undefined),
-                    facebookId: t.facebookId ?? (t.audioUrl.startsWith('fb:') ? t.audioUrl.slice(3) : undefined),
+                    facebookId: t.facebookId ?? (t.audioUrl.startsWith('fbreel:') ? t.audioUrl.slice(7) : t.audioUrl.startsWith('fb:') ? t.audioUrl.slice(3) : undefined),
+                    facebookIsReel: t.audioUrl.startsWith('fbreel:') ? true : undefined,
                 })),
             }));
             setPlaylists(normalizedLists);
@@ -517,18 +519,20 @@ export default function MusicSidebar({
             return;
         }
 
-        // Facebook: extract reel / video ID
-        const fbMatch = url.match(/facebook\.com\/(?:reel\/|watch\/?\?v=|video\.php\?v=)(\d+)/);
+        // Facebook: extract reel / video ID — distinguish portrait reels from landscape videos
+        const fbMatch = url.match(/facebook\.com\/(?:(reel)\/|watch\/?\?v=|video\.php\?v=)(\d+)/);
         if (fbMatch) {
-            const fbId = fbMatch[1];
+            const isReel = !!fbMatch[1]; // fbMatch[1] = 'reel' for reel URLs, undefined for watch
+            const fbId = fbMatch[2];
             const track: PlaylistTrack = {
                 id: `fb_${fbId}`,
-                title: `Facebook Video – ${fbId}`,
+                title: isReel ? `Facebook Reel – ${fbId}` : `Facebook Video – ${fbId}`,
                 artist: 'Facebook',
-                audioUrl: `fb:${fbId}`,
+                audioUrl: isReel ? `fbreel:${fbId}` : `fb:${fbId}`,
                 durationSec: 0,
                 source: 'facebook',
                 facebookId: fbId,
+                facebookIsReel: isReel ? true : undefined,
             };
             if (mode === 'play') {
                 onPlayTracks([{ ...track }]);
