@@ -2356,6 +2356,7 @@ export default function MusicPlayerClient() {
                         zIndex: 20,
                     }}
                     onClick={e => e.stopPropagation()}
+                    onWheel={e => { if (ytFullMode) feedRef.current?.scrollBy({ top: e.deltaY, behavior: 'smooth' }); }}
                 >
                     <iframe
                         ref={desktopYtIframeRef}
@@ -2453,6 +2454,7 @@ export default function MusicPlayerClient() {
                         background: '#000',
                     }}
                     onClick={e => e.stopPropagation()}
+                    onWheel={e => { if (ytFullMode) feedRef.current?.scrollBy({ top: e.deltaY, behavior: 'smooth' }); }}
                 >
                     <iframe
                         ref={desktopFbIframeRef}
