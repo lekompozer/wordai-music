@@ -1,0 +1,84 @@
+name: Release WordAI Music
+
+# Separate release workflow — manually triggered when you want to publish
+# a new version. Bumps version, creates tag, triggers the build workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump (patch / minor / major)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      release_notes:
+        description: 'Release notes (optional)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  bump-and-tag:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        id: bump
+        run: |
+          # Read current version from tauri.conf.json
+          CURRENT=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          echo "Current version: $CURRENT"
+
+          # Parse semver
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          # Bump
+          case "${{ github.event.inputs.bump }}" in
+            major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0;;
+            minor) MINOR=$((MINOR+1)); PATCH=0;;
+            patch) PATCH=$((PATCH+1));;
+          esac
+
+          NEW="$MAJOR.$MINOR.$PATCH"
+          echo "New version: $NEW"
+          echo "new_version=$NEW" >> $GITHUB_OUTPUT
+
+          # Update tauri.conf.json
+          node -e "
+            const fs = require('fs');
+            const cfg = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json','utf8'));
+            cfg.version = '$NEW';
+            fs.writeFileSync('src-tauri/tauri.conf.json', JSON.stringify(cfg, null, 2) + '\n');
+          "
+
+          # Update Cargo.toml
+          sed -i "s/^version = \"$CURRENT\"/version = \"$NEW\"/" src-tauri/Cargo.toml
+
+          # Commit and tag
+          git add src-tauri/tauri.conf.json src-tauri/Cargo.toml
+          git commit -m "chore: release v$NEW"
+          git tag "v$NEW"
+          git push origin main
+          git push origin "v$NEW"
+
+      - name: Summary
+        run: echo "Tagged v${{ steps.bump.outputs.new_version }} — build-desktop workflow will trigger automatically"

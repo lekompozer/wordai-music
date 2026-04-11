@@ -1,0 +1,154 @@
+name: Build WordAI Music Desktop
+
+on:
+  push:
+    tags:
+      - 'v*'          # Trigger on version tags: v0.1.0, v1.0.0 etc.
+  workflow_dispatch:  # Manual trigger from GitHub Actions UI
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+# Permissions needed to create releases
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS Apple Silicon (arm64)
+          - platform: macos-latest
+            args: '--target aarch64-apple-darwin'
+            artifact_name: WordAI-Music-mac-arm64
+            bundle_path: src-tauri/target/aarch64-apple-darwin/release/bundle
+
+          # macOS Intel (x64)
+          - platform: macos-13
+            args: '--target x86_64-apple-darwin'
+            artifact_name: WordAI-Music-mac-x64
+            bundle_path: src-tauri/target/x86_64-apple-darwin/release/bundle
+
+          # Windows x64
+          - platform: windows-latest
+            args: ''
+            artifact_name: WordAI-Music-windows
+            bundle_path: src-tauri/target/release/bundle
+
+          # Linux x64
+          - platform: ubuntu-22.04
+            args: ''
+            artifact_name: WordAI-Music-linux
+            bundle_path: src-tauri/target/release/bundle
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      # ── Checkout ───────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Node.js ───────────────────────────────────────────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ── Rust ──────────────────────────────────────────────────────────────
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin' || matrix.platform == 'macos-13' && 'x86_64-apple-darwin' || '' }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      # ── Linux system deps ─────────────────────────────────────────────────
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev \
+            libglib2.0-dev \
+            libsoup-3.0-dev
+
+      # ── Install dependencies ──────────────────────────────────────────────
+      - name: Install Node dependencies
+        run: npm ci
+
+      # ── Build Next.js static export ───────────────────────────────────────
+      - name: Build Next.js
+        env:
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'https://ai.wordai.pro' }}
+        run: npm run build
+
+      # ── Build Tauri desktop app ───────────────────────────────────────────
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # OAuth credentials baked into binary
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          # Tauri update signing key
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'WordAI Music ${{ github.ref_name }}'
+          releaseBody: |
+            ## WordAI Music ${{ github.ref_name }}
+
+            ### Download
+            - 🍎 **macOS Apple Silicon**: `WordAI-Music-mac-arm64.dmg`
+            - 🍎 **macOS Intel**: `WordAI-Music-mac-x64.dmg`
+            - 🪟 **Windows**: `WordAI-Music-windows-setup.exe`
+            - 🐧 **Linux**: `WordAI-Music-linux.AppImage`
+
+            ### Install notes (macOS)
+            App is ad-hoc signed. If blocked by Gatekeeper:
+            ```
+            xattr -d com.apple.quarantine /Applications/WordAI\ Music.app
+            ```
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+
+      # ── Upload artifacts ──────────────────────────────────────────────────
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            ${{ matrix.bundle_path }}/dmg/*.dmg
+            ${{ matrix.bundle_path }}/macos/*.app
+            ${{ matrix.bundle_path }}/nsis/*.exe
+            ${{ matrix.bundle_path }}/msi/*.msi
+            ${{ matrix.bundle_path }}/appimage/*.AppImage
+            ${{ matrix.bundle_path }}/deb/*.deb
+          if-no-files-found: warn
+          retention-days: 30
