@@ -33,24 +33,28 @@ jobs:
           # macOS Apple Silicon (arm64)
           - platform: macos-latest
             args: '--target aarch64-apple-darwin'
+            rust_target: aarch64-apple-darwin
             artifact_name: WordAI-Music-mac-arm64
             bundle_path: src-tauri/target/aarch64-apple-darwin/release/bundle
 
-          # macOS Intel (x64)
-          - platform: macos-13
+          # macOS Intel (x64) — cross-compiled from arm64 runner (macos-13 removed by GitHub)
+          - platform: macos-latest
             args: '--target x86_64-apple-darwin'
+            rust_target: x86_64-apple-darwin
             artifact_name: WordAI-Music-mac-x64
             bundle_path: src-tauri/target/x86_64-apple-darwin/release/bundle
 
           # Windows x64
           - platform: windows-latest
             args: ''
+            rust_target: ''
             artifact_name: WordAI-Music-windows
             bundle_path: src-tauri/target/release/bundle
 
           # Linux x64
           - platform: ubuntu-22.04
             args: ''
+            rust_target: ''
             artifact_name: WordAI-Music-linux
             bundle_path: src-tauri/target/release/bundle
 
@@ -65,14 +69,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       # ── Rust ──────────────────────────────────────────────────────────────
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin' || matrix.platform == 'macos-13' && 'x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.rust_target }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -96,7 +100,7 @@ jobs:
 
       # ── Install dependencies ──────────────────────────────────────────────
       - name: Install Node dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
 
       # ── Build Next.js static export ───────────────────────────────────────
       - name: Build Next.js
