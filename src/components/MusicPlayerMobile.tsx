@@ -532,7 +532,7 @@ export default function MusicPlayerMobile() {
         };
     }, [activeSlideForYT?.youtubeId, activeSlideForYT?.id, activeSlideForYT?.durationSec]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // ── Facebook ended detection (timer-based, no postMessage API) ───────────
+    // ── Facebook ended detection (message listener + fallback timer) ───────────
     const activeSlideFbId = slides[activeIndex]?.facebookId;
     useEffect(() => {
         if (!activeSlideFbId) {
@@ -546,17 +546,43 @@ export default function MusicPlayerMobile() {
         setMobileFbEmbedUrl(embedUrl);
         mobileFbEndedFiredRef.current = false;
         if (mobileFbEndedTimerRef.current) clearTimeout(mobileFbEndedTimerRef.current);
-        const track = slides[activeIndex];
-        const fallbackMs = (track?.durationSec ?? 0) > 10 ? ((track?.durationSec ?? 0) + 5) * 1000 : 600000;
-        const fallbackTimer = setTimeout(() => {
+
+        const triggerFbEnd = () => {
             if (mobileFbEndedFiredRef.current) return;
             mobileFbEndedFiredRef.current = true;
             setMobileFbFading(true);
             mobileFbEndedTimerRef.current = setTimeout(() => {
-                setActiveIndex(i => i + 1);
+                const nextIdx = activeIndexRef.current + 1;
+                if (nextIdx >= slidesRef.current.length) return;
+                const container = feedRef.current;
+                if (container) {
+                    isSwitchingRef.current = true;
+                    container.scrollTop = nextIdx * container.clientHeight;
+                    setTimeout(() => { isSwitchingRef.current = false; }, 300);
+                }
+                setActiveIndex(nextIdx);
+                setCurrentTime(0); setDuration(0);
             }, 600);
-        }, fallbackMs);
+        };
+
+        // Listen for Facebook postMessage events (newer embed versions send these)
+        const onFbMessage = (e: MessageEvent) => {
+            if (!String(e.origin).includes('facebook.com')) return;
+            try {
+                const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+                // Facebook sends various event shapes depending on embed version
+                const evType = data?.type || data?.event || data?.action || '';
+                if (/end|finish|complete/i.test(String(evType))) triggerFbEnd();
+            } catch { }
+        };
+        window.addEventListener('message', onFbMessage);
+
+        const track = slides[activeIndex];
+        const fallbackMs = (track?.durationSec ?? 0) > 10 ? ((track?.durationSec ?? 0) + 5) * 1000 : 300000; // 5min default if unknown
+        const fallbackTimer = setTimeout(triggerFbEnd, fallbackMs);
+
         return () => {
+            window.removeEventListener('message', onFbMessage);
             clearTimeout(fallbackTimer);
             if (mobileFbEndedTimerRef.current) clearTimeout(mobileFbEndedTimerRef.current);
         };
@@ -1152,7 +1178,7 @@ export default function MusicPlayerMobile() {
                     {mobileFbEmbedUrl && (
                         <div
                             className={`absolute left-0 right-0 z-10 transition-opacity duration-[600ms] ${activeSlide?.facebookId && !mobileFbFading ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-                            style={{ top: `${activeIndex * 100}%`, height: 'calc(100% - 140px)', background: '#000' }}
+                            style={{ top: `calc(${activeIndex * 100}% + 100px)`, height: 'calc(100% - 240px)', background: '#000' }}
                             onClick={e => e.stopPropagation()}
                         >
                             <iframe

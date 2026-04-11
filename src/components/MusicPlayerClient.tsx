@@ -2036,10 +2036,7 @@ export default function MusicPlayerClient() {
 
         if (desktopFbEndedTimerRef.current) clearTimeout(desktopFbEndedTimerRef.current);
 
-        // Facebook doesn't expose an ended event — use duration-based fallback timer
-        const track = slides[activeIndex];
-        const fallbackMs = (track?.durationSec ?? 0) > 10 ? ((track?.durationSec ?? 0) + 5) * 1000 : 600000;
-        const fallbackTimer = setTimeout(() => {
+        const triggerFbEnd = () => {
             if (desktopFbEndedFiredRef.current) return;
             desktopFbEndedFiredRef.current = true;
             setDesktopFbFading(true);
@@ -2047,9 +2044,26 @@ export default function MusicPlayerClient() {
                 crossfadeAdvanceRef.current = true;
                 advanceToNext();
             }, 600);
-        }, fallbackMs);
+        };
+
+        // Listen for Facebook postMessage ended events
+        const onFbMessage = (e: MessageEvent) => {
+            if (!String(e.origin).includes('facebook.com')) return;
+            try {
+                const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+                const evType = data?.type || data?.event || data?.action || '';
+                if (/end|finish|complete/i.test(String(evType))) triggerFbEnd();
+            } catch { }
+        };
+        window.addEventListener('message', onFbMessage);
+
+        // Facebook doesn't expose a reliable ended event — use duration-based fallback timer
+        const track = slides[activeIndex];
+        const fallbackMs = (track?.durationSec ?? 0) > 10 ? ((track?.durationSec ?? 0) + 5) * 1000 : 300000; // 5min default if unknown
+        const fallbackTimer = setTimeout(triggerFbEnd, fallbackMs);
 
         return () => {
+            window.removeEventListener('message', onFbMessage);
             clearTimeout(fallbackTimer);
             if (desktopFbEndedTimerRef.current) clearTimeout(desktopFbEndedTimerRef.current);
         };
