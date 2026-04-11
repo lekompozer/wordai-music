@@ -57,7 +57,7 @@ type AnyChannelMeta = { slug: string; name: string; label: string; accent: strin
 interface Track {
     id: string; title: string; artist: string;
     audioUrl: string; durationSec: number; source: string; thumbnailUrl?: string;
-    youtubeId?: string; tiktokId?: string;
+    youtubeId?: string; tiktokId?: string; facebookId?: string;
 }
 interface SlideTrack extends Track { channelSlug: ChannelSlug; }
 
@@ -126,6 +126,7 @@ async function loadChannel(slug: string): Promise<Track[]> {
                 const audioUrl = ((tr.audioUrl ?? tr.audio_url) ?? '') as string;
                 const youtubeId = ((tr as any).youtubeId ?? (audioUrl.startsWith('yt:') ? audioUrl.slice(3) : undefined)) as string | undefined;
                 const tiktokId = ((tr as any).tiktokId ?? (audioUrl.startsWith('tt:') ? audioUrl.slice(3) : undefined)) as string | undefined;
+                const facebookId = ((tr as any).facebookId ?? (audioUrl.startsWith('fb:') ? audioUrl.slice(3) : undefined)) as string | undefined;
                 return {
                     id: (tr.id ?? tr.track_id) as string,
                     title: tr.title as string,
@@ -136,6 +137,7 @@ async function loadChannel(slug: string): Promise<Track[]> {
                     thumbnailUrl: (tr.thumbnailUrl ?? tr.thumbnail_url) as string | undefined,
                     youtubeId,
                     tiktokId,
+                    facebookId,
                 };
             });
             channelCache[slug] = tracks; return tracks;
@@ -147,11 +149,13 @@ async function loadChannel(slug: string): Promise<Track[]> {
             const audioUrl = (tr.audioUrl ?? '') as string;
             const youtubeId = ((tr.youtubeId as string | undefined) ?? (audioUrl.startsWith('yt:') ? audioUrl.slice(3) : undefined));
             const tiktokId = ((tr.tiktokId as string | undefined) ?? (audioUrl.startsWith('tt:') ? audioUrl.slice(3) : undefined));
+            const facebookId = ((tr.facebookId as string | undefined) ?? (audioUrl.startsWith('fb:') ? audioUrl.slice(3) : undefined));
             return {
                 ...tr,
                 thumbnailUrl: (tr.thumbnailUrl ?? tr.coverUrl) as string | undefined,
                 youtubeId,
                 tiktokId,
+                facebookId,
             };
         }) as unknown as Track[];
         channelCache[slug] = tracks; return tracks;
@@ -401,6 +405,12 @@ export default function MusicPlayerMobile() {
     const ytAutoDismissRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [ytFading, setYtFading] = useState(false);
 
+    // Facebook iframe state
+    const [mobileFbEmbedUrl, setMobileFbEmbedUrl] = useState<string | null>(null);
+    const [mobileFbFading, setMobileFbFading] = useState(false);
+    const mobileFbEndedFiredRef = useRef(false);
+    const mobileFbEndedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     // Global YouTube Pool
     const globalYtIdRef = useRef<string | null>(null);
     if (!globalYtIdRef.current) {
@@ -522,6 +532,37 @@ export default function MusicPlayerMobile() {
         };
     }, [activeSlideForYT?.youtubeId, activeSlideForYT?.id, activeSlideForYT?.durationSec]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // ── Facebook ended detection (timer-based, no postMessage API) ───────────
+    const activeSlideFbId = slides[activeIndex]?.facebookId;
+    useEffect(() => {
+        if (!activeSlideFbId) {
+            setMobileFbFading(true);
+            const t = setTimeout(() => { setMobileFbEmbedUrl(null); setMobileFbFading(false); }, 600);
+            return () => clearTimeout(t);
+        }
+        const fbId = activeSlideFbId;
+        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(`https://www.facebook.com/reel/${fbId}`)}&show_text=false&autoplay=1&mute=0`;
+        setMobileFbFading(false);
+        setMobileFbEmbedUrl(embedUrl);
+        mobileFbEndedFiredRef.current = false;
+        if (mobileFbEndedTimerRef.current) clearTimeout(mobileFbEndedTimerRef.current);
+        const track = slides[activeIndex];
+        const fallbackMs = (track?.durationSec ?? 0) > 10 ? ((track?.durationSec ?? 0) + 5) * 1000 : 600000;
+        const fallbackTimer = setTimeout(() => {
+            if (mobileFbEndedFiredRef.current) return;
+            mobileFbEndedFiredRef.current = true;
+            setMobileFbFading(true);
+            mobileFbEndedTimerRef.current = setTimeout(() => {
+                setActiveIndex(i => i + 1);
+            }, 600);
+        }, fallbackMs);
+        return () => {
+            clearTimeout(fallbackTimer);
+            if (mobileFbEndedTimerRef.current) clearTimeout(mobileFbEndedTimerRef.current);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeSlideFbId]);
+
     // ── touchend → postMessage playVideo (iOS Safari autoplay workaround) ────
     // Scroll events are NOT user activation on iOS. touchend IS.
     // When user lifts finger after swiping, if the new active slide is YouTube,
@@ -609,8 +650,8 @@ export default function MusicPlayerMobile() {
             if (!audio.src || audio.src === window.location.href) return;
             const nextIdx = activeIndexRef.current + 1;
             const nextTrack = slidesRef.current[nextIdx];
-            // Don't error-advance into a YouTube/TikTok track — the iframe handles those
-            if (!nextTrack || nextTrack.youtubeId || nextTrack.tiktokId) return;
+            // Don't error-advance into a YouTube/TikTok/Facebook track — the iframe handles those
+            if (!nextTrack || nextTrack.youtubeId || nextTrack.tiktokId || nextTrack.facebookId) return;
             if (nextIdx < slidesRef.current.length) setActiveIndex(nextIdx);
         });
 
@@ -635,10 +676,10 @@ export default function MusicPlayerMobile() {
             const url = (prefetched?.id === nextTrack.id) ? prefetched.url : nextTrack.audioUrl;
             prefetchRef.current = null;
 
-            // YouTube/TikTok tracks: just advance the index — the iframe handles playback.
+            // YouTube/TikTok/Facebook tracks: just advance the index — the iframe handles playback.
             // Do NOT clear audio.src here — the activeIndex useEffect will set the silent loop,
             // keeping the OS MediaSession alive through the track transition.
-            if (nextTrack.youtubeId || nextTrack.tiktokId || url.startsWith('yt:') || url.startsWith('tt:')) {
+            if (nextTrack.youtubeId || nextTrack.tiktokId || nextTrack.facebookId || url.startsWith('yt:') || url.startsWith('tt:') || url.startsWith('fb:')) {
                 srcSetByEndedRef.current = true;
                 currentUrlRef.current = '';
                 setActiveIndex(nextIdx);
@@ -712,9 +753,9 @@ export default function MusicPlayerMobile() {
     useEffect(() => {
         const a = audioRef.current;
         if (!a) return;
-        // YouTube/TikTok tracks: iframe controls its own playback — do NOT touch audio element
+        // YouTube/TikTok/Facebook tracks: iframe controls its own playback — do NOT touch audio element
         const track = slides[activeIndex];
-        if (track?.youtubeId || track?.tiktokId) return;
+        if (track?.youtubeId || track?.tiktokId || track?.facebookId) return;
         if (isPlaying) {
             hasUserGestureRef.current = true;
             void a.play()
@@ -745,10 +786,8 @@ export default function MusicPlayerMobile() {
         const url = (prefetched?.id === track.id) ? prefetched.url : track.audioUrl;
         prefetchRef.current = null;
 
-        // YouTube / TikTok tracks: keep <audio> alive with a silent loop to preserve iOS/Android lock-screen session.
-        // Setting audio.src = '' or calling audio.pause() signals to the OS that playback stopped completely,
-        // which drops the lock-screen MediaSession widget and background audio entitlement.
-        if (track.youtubeId || track.tiktokId) {
+        // YouTube / TikTok / Facebook tracks: keep <audio> alive with a silent loop to preserve iOS/Android lock-screen session.
+        if (track.youtubeId || track.tiktokId || track.facebookId) {
             if (currentUrlRef.current !== 'silent') {
                 currentUrlRef.current = 'silent';
                 audio.loop = true;
@@ -894,8 +933,9 @@ export default function MusicPlayerMobile() {
                 id: tr.id, title: tr.title, artist: tr.artist, audioUrl: tr.audioUrl,
                 durationSec: tr.durationSec, source: tr.source, thumbnailUrl: tr.thumbnailUrl,
                 channelSlug: 'playlist',
-                youtubeId: tr.audioUrl.startsWith('yt:') ? tr.audioUrl.slice(3) : undefined,
-                tiktokId: tr.audioUrl.startsWith('tt:') ? tr.audioUrl.slice(3) : undefined,
+                youtubeId: tr.audioUrl.startsWith('yt:') ? tr.audioUrl.slice(3) : (tr as any).youtubeId,
+                tiktokId: tr.audioUrl.startsWith('tt:') ? tr.audioUrl.slice(3) : (tr as any).tiktokId,
+                facebookId: tr.audioUrl.startsWith('fb:') ? tr.audioUrl.slice(3) : (tr as any).facebookId,
             }));
             setSlides(newSlides); setSelectedChannel('playlist' as ChannelSlug); setIsLoading(false);
         } else {
@@ -921,8 +961,9 @@ export default function MusicPlayerMobile() {
             id: tr.id, title: tr.title, artist: tr.artist, audioUrl: tr.audioUrl,
             durationSec: tr.durationSec, source: tr.source as 'youtube' | 'tiktok' | 'local',
             thumbnailUrl: tr.thumbnailUrl, channelSlug: 'playlist',
-            youtubeId: tr.audioUrl.startsWith('yt:') ? tr.audioUrl.slice(3) : undefined,
-            tiktokId: tr.audioUrl.startsWith('tt:') ? tr.audioUrl.slice(3) : undefined,
+            youtubeId: tr.audioUrl.startsWith('yt:') ? tr.audioUrl.slice(3) : (tr as any).youtubeId,
+            tiktokId: tr.audioUrl.startsWith('tt:') ? tr.audioUrl.slice(3) : (tr as any).tiktokId,
+            facebookId: tr.audioUrl.startsWith('fb:') ? tr.audioUrl.slice(3) : (tr as any).facebookId,
         }));
         saveLastCtx({ type: 'playlist', id: mostRecent.id, name: mostRecent.name, tracks: mostRecent.tracks.slice(0, 50) });
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; currentUrlRef.current = ''; }
@@ -948,8 +989,8 @@ export default function MusicPlayerMobile() {
         if (idx !== activeIndexRef.current && idx >= 0 && idx < slidesRef.current.length) {
             setActiveIndex(idx);
             const nextTrack = slidesRef.current[idx];
-            // Don't set isPlaying for YouTube/TikTok — iframe autoplay handles it
-            if (hasUserGestureRef.current && !nextTrack?.youtubeId && !nextTrack?.tiktokId) {
+            // Don't set isPlaying for YouTube/TikTok/Facebook — iframe autoplay handles it
+            if (hasUserGestureRef.current && !nextTrack?.youtubeId && !nextTrack?.tiktokId && !nextTrack?.facebookId) {
                 setIsPlaying(true);
             }
         }
@@ -971,8 +1012,9 @@ export default function MusicPlayerMobile() {
         const newSlides: SlideTrack[] = ordered.slice(0, MAX_SLIDES).map(tr => ({
             id: tr.id, title: tr.title, artist: tr.artist, audioUrl: tr.audioUrl,
             durationSec: tr.durationSec, source: tr.source, channelSlug: 'playlist', thumbnailUrl: tr.thumbnailUrl,
-            youtubeId: tr.audioUrl.startsWith('yt:') ? tr.audioUrl.slice(3) : undefined,
-            tiktokId: tr.audioUrl.startsWith('tt:') ? tr.audioUrl.slice(3) : undefined,
+            youtubeId: tr.audioUrl.startsWith('yt:') ? tr.audioUrl.slice(3) : (tr as any).youtubeId,
+            tiktokId: tr.audioUrl.startsWith('tt:') ? tr.audioUrl.slice(3) : (tr as any).tiktokId,
+            facebookId: tr.audioUrl.startsWith('fb:') ? tr.audioUrl.slice(3) : (tr as any).facebookId,
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: ordered.slice(0, 50) });
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; currentUrlRef.current = ''; }
@@ -1106,6 +1148,25 @@ export default function MusicPlayerMobile() {
                         </div>
                     )}
 
+                    {/* Global Facebook Iframe (mobile) — remounted per track via key */}
+                    {mobileFbEmbedUrl && (
+                        <div
+                            className={`absolute left-0 right-0 z-10 transition-opacity duration-[600ms] ${activeSlide?.facebookId && !mobileFbFading ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                            style={{ top: `${activeIndex * 100}%`, height: 'calc(100% - 140px)', background: '#000' }}
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <iframe
+                                key={mobileFbEmbedUrl}
+                                src={mobileFbEmbedUrl}
+                                className="w-full h-full"
+                                style={{ border: 'none' }}
+                                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                                allowFullScreen
+                                scrolling="no"
+                            />
+                        </div>
+                    )}
+
                     {isLoading && slides.length === 0 ? (
                         <div className="h-full flex items-center justify-center">
                             <div className="flex flex-col items-center gap-4">
@@ -1124,7 +1185,7 @@ export default function MusicPlayerMobile() {
                                 key={`${slide.channelSlug}-${slide.id}-${i}`}
                                 ref={el => { slideRefs.current[i] = el; }}
                                 className="h-full flex-shrink-0 snap-start relative overflow-hidden"
-                                style={{ background: theme.background }}
+                                style={{ background: (slide.youtubeId || slide.facebookId) && isActive ? '#000' : theme.background }}
                             >
                                 {/* Ambient pulse rings */}
                                 {isActive && (
@@ -1158,9 +1219,9 @@ export default function MusicPlayerMobile() {
                                     </div>
                                 </div>
 
-                                {/* Center: Vinyl + sound bars OR YouTube global block (empty space) */}
-                                {slide.youtubeId ? (
-                                    /* Empty placeholder because global YT iframe overlays here */
+                                {/* Center: Vinyl + sound bars OR YouTube/Facebook global block (empty space) */}
+                                {slide.youtubeId || slide.facebookId ? (
+                                    /* Empty placeholder because global YT/FB iframe overlays here */
                                     <div className="absolute inset-0 bottom-[140px] z-10 pointer-events-none" onClick={e => e.stopPropagation()} />
                                 ) : (
                                     /* Normal vinyl disc */
@@ -1196,8 +1257,8 @@ export default function MusicPlayerMobile() {
                                         </div>
                                     )}
 
-                                    {/* Progress bar — hidden for YouTube tracks */}
-                                    {!slide.youtubeId && <div className="mt-3 flex items-center gap-1.5">
+                                    {/* Progress bar — hidden for YouTube/Facebook tracks */}
+                                    {!slide.youtubeId && !slide.facebookId && <div className="mt-3 flex items-center gap-1.5">
                                         <div
                                             className="flex-1 relative flex items-center cursor-pointer"
                                             style={{ height: 18 }}
@@ -1227,8 +1288,8 @@ export default function MusicPlayerMobile() {
 
                                 {/* Right action icons */}
                                 <div className="absolute right-3 bottom-24 z-20 flex flex-col items-center gap-4">
-                                    {/* Play/Pause button — hidden for YouTube (iframe has own controls) */}
-                                    {!slide.youtubeId && (
+                                    {/* Play/Pause button — hidden for YouTube/Facebook (iframe has own controls) */}
+                                    {!slide.youtubeId && !slide.facebookId && (
                                         <button onClick={() => { hasUserGestureRef.current = true; setIsPlaying(p => !p); }}
                                             className="flex flex-col items-center gap-1">
                                             <div className="w-11 h-11 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center border border-white/10 text-white">

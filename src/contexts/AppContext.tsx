@@ -31,15 +31,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const savedTheme = localStorage.getItem('wordai-music-theme');
         if (savedTheme) {
             setIsDark(savedTheme === 'dark');
-        } else {
-            const mq = window.matchMedia('(prefers-color-scheme: dark)');
-            setIsDark(mq.matches);
-            const onChange = (e: MediaQueryListEvent) => {
-                if (!localStorage.getItem('wordai-music-theme')) setIsDark(e.matches);
-            };
-            mq.addEventListener('change', onChange);
-            return () => mq.removeEventListener('change', onChange);
         }
+        // No saved theme → keep default true (dark) regardless of system preference
     }, []);
 
     useEffect(() => {

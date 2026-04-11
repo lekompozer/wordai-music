@@ -2386,15 +2386,15 @@ export default function MusicPlayerClient() {
             )}
 
             {/* Global Desktop Facebook Iframe */}
-            {desktopFbEmbedUrl && (ytFullMode ? mainContentRect : desktopCardRect) && (
+            {desktopFbEmbedUrl && (
                 <div
                     className={`transition-opacity duration-[600ms] ${activeSlide?.facebookId && !desktopFbFading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                     style={{
                         position: 'fixed',
-                        left: ytFullMode ? mainContentRect!.left : desktopCardRect!.left,
-                        top: ytFullMode ? mainContentRect!.top : desktopCardRect!.top + 88,
-                        width: ytFullMode ? mainContentRect!.width : desktopCardRect!.width,
-                        height: ytFullMode ? mainContentRect!.height : Math.max(0, desktopCardRect!.height - 88 - 130),
+                        left: (ytFullMode ? mainContentRect?.left : desktopCardRect?.left) ?? 0,
+                        top: ytFullMode ? (mainContentRect?.top ?? 0) : ((desktopCardRect?.top ?? 0) + 88),
+                        width: (ytFullMode ? mainContentRect?.width : desktopCardRect?.width) ?? window.innerWidth,
+                        height: ytFullMode ? (mainContentRect?.height ?? window.innerHeight) : Math.max(0, (desktopCardRect?.height ?? window.innerHeight) - 88 - 130),
                         zIndex: 20,
                         background: '#000',
                     }}
