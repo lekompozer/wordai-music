@@ -19,6 +19,10 @@ on:
         required: false
         default: ''
 
+# Opt into Node.js 24 for all actions (avoids Node.js 20 deprecation warning)
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 permissions:
   contents: write
 

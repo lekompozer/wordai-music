@@ -16,6 +16,10 @@ on:
           - minor
           - major
 
+# Opt into Node.js 24 for all actions (avoids Node.js 20 deprecation warning)
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # Permissions needed to create releases
 permissions:
   contents: write
@@ -114,9 +118,9 @@ jobs:
           # OAuth credentials baked into binary
           GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          # Tauri update signing key
+          # Tauri update signing key (generate once: npx tauri signer generate -w .env.local)
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD || '' }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'WordAI Music ${{ github.ref_name }}'
