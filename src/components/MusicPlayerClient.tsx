@@ -2072,15 +2072,31 @@ export default function MusicPlayerClient() {
 
     // ── Channel switch ───────────────────────────────────────────────────────
 
+    const stopIframeMedia = useCallback(() => {
+        // Stop YouTube iframe audio
+        try {
+            const win = desktopYtIframeRef.current?.contentWindow;
+            if (win) win.postMessage(JSON.stringify({ event: 'command', func: 'stopVideo', args: [] }), '*');
+        } catch { }
+        setDesktopGlobalYtId(null);
+        setDesktopYtFading(false);
+        setDesktopYtPlaying(false);
+        desktopLastLoadedYtIdRef.current = null;
+        // Stop Facebook iframe audio
+        setDesktopFbEmbedUrl(null);
+        setDesktopFbFading(false);
+    }, []);
+
     const handleSelectChannel = useCallback((slug: ChannelSlug) => {
         if (slug === selectedChannel) return;
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
+        stopIframeMedia();
         setSelectedChannel(slug);
         setCurrentTime(0);
         setDuration(0);
         saveLastCtx({ type: 'channel', slug });
         loadAndBuildSlides(slug, true);
-    }, [selectedChannel, loadAndBuildSlides]);
+    }, [selectedChannel, loadAndBuildSlides, stopIframeMedia]);
 
     // ── Like / Save ──────────────────────────────────────────────────────────
 
@@ -2161,6 +2177,7 @@ export default function MusicPlayerClient() {
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: orderedTracks.slice(0, 50) });
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
+        stopIframeMedia();
         // Prevent IntersectionObserver from interfering during slide array swap
         isSwitchingChannel.current = true;
         slideRefs.current = [];
@@ -2174,7 +2191,7 @@ export default function MusicPlayerClient() {
             feedRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
             isSwitchingChannel.current = false;
         }, 80);
-    }, [isShuffle]);
+    }, [isShuffle, stopIframeMedia]);
 
     const loadChannelTracksForSidebar = useCallback(async (slug: string): Promise<SidebarTrack[]> => {
         const tracks = await loadChannel(slug);

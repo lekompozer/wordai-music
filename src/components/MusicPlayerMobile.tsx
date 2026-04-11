@@ -1024,13 +1024,25 @@ export default function MusicPlayerMobile() {
 
     // ── Action handlers ───────────────────────────────────────────────────────
 
+    const stopIframeMedia = useCallback(() => {
+        // Stop YouTube iframe audio
+        try {
+            const win = ytIframeRef.current?.contentWindow;
+            if (win) win.postMessage(JSON.stringify({ event: 'command', func: 'stopVideo', args: [] }), '*');
+        } catch { }
+        // Stop Facebook iframe audio
+        setMobileFbEmbedUrl(null);
+        setMobileFbFading(false);
+    }, []);
+
     const handleSelectChannel = useCallback((slug: ChannelSlug) => {
         if (slug === selectedChannel) return;
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; currentUrlRef.current = ''; }
+        stopIframeMedia();
         setIsPlaying(false); setSelectedChannel(slug); setCurrentTime(0); setDuration(0);
         saveLastCtx({ type: 'channel', slug });
         void loadAndBuildSlides(slug, true);
-    }, [selectedChannel, loadAndBuildSlides]);
+    }, [selectedChannel, loadAndBuildSlides, stopIframeMedia]);
 
     const handlePlayTracks = useCallback((tracks: SidebarTrack[], playlistId?: string, playlistName?: string) => {
         const ordered = isShuffle ? [tracks[0]!, ...shuffleArr(tracks.slice(1))] : tracks;
@@ -1044,12 +1056,13 @@ export default function MusicPlayerMobile() {
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: ordered.slice(0, 50) });
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; currentUrlRef.current = ''; }
+        stopIframeMedia();
         isSwitchingRef.current = true; slideRefs.current = [];
         setCurrentPlaylistName(playlistName ?? 'Playlist');
         setSlides(newSlides); setSelectedChannel('playlist' as ChannelSlug);
         setActiveIndex(0); setIsPlaying(false); setIsMenuOpen(false);
         setTimeout(() => { feedRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); isSwitchingRef.current = false; }, 80);
-    }, [isShuffle]);
+    }, [isShuffle, stopIframeMedia]);
 
     const handleLike = useCallback((id: string) => { setLikedIds(new Set(toggleSetStorage('music_liked', id))); }, []);
     const handleSave = useCallback((id: string) => { setPlaylistPickerError(''); setPlaylistPickerTrackId(prev => prev === id ? null : id); }, []);
