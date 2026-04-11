@@ -541,7 +541,7 @@ export default function MusicPlayerMobile() {
             return () => clearTimeout(t);
         }
         const fbId = activeSlideFbId;
-        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(`https://www.facebook.com/reel/${fbId}`)}&show_text=false&autoplay=1&mute=0`;
+        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(`https://www.facebook.com/watch?v=${fbId}`)}&show_text=false&autoplay=1&mute=0`;
         setMobileFbFading(false);
         setMobileFbEmbedUrl(embedUrl);
         mobileFbEndedFiredRef.current = false;

@@ -2029,7 +2029,7 @@ export default function MusicPlayerClient() {
         }
 
         const fbId = activeSlideFacebookId;
-        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(`https://www.facebook.com/reel/${fbId}`)}&show_text=false&autoplay=1&mute=0`;
+        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(`https://www.facebook.com/watch?v=${fbId}`)}&show_text=false&autoplay=1&mute=0`;
         setDesktopFbFading(false);
         setDesktopFbEmbedUrl(embedUrl);
         desktopFbEndedFiredRef.current = false;

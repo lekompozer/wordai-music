@@ -1346,7 +1346,7 @@ export default function MusicSidebar({
                         value={urlLinkInput}
                         onChange={e => { setUrlLinkInput(e.target.value); setUrlLinkError(''); }}
                         onKeyDown={e => { if (e.key === 'Enter') handleAddUrlToPlaylist('add'); }}
-                        placeholder="https://www.facebook.com/reel/..."
+                        placeholder="https://www.facebook.com/reel/123... hoặc watch/?v=..."
                         className={`flex-1 min-w-0 px-3 py-2 rounded-xl text-sm border outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 ${inputCls}`}
                     />
                 </div>
