@@ -4,5 +4,5 @@ import dynamic from 'next/dynamic';
 const MusicApp = dynamic(() => import('@/components/MusicApp'), { ssr: false });
 
 export default function HomePage() {
-  return <MusicApp />;
+    return <MusicApp />;
 }

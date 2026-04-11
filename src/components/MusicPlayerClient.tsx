@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import {
     Music2, Heart, Bookmark, BookmarkCheck, Share2,
     Volume2, VolumeX, ChevronRight, Play, Pause, Menu, Plus, X, ListMusic, Shuffle,
+    Maximize2, Minimize2,
 } from 'lucide-react';
 import { useTheme, useLanguage } from '@/contexts/AppContext';
 import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
@@ -821,7 +822,7 @@ function MusicSlide({
 
     return (
         <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden select-none"
-            style={{ background: trackTheme.background }}>
+            style={{ background: track.youtubeId && isActive ? '#000000' : trackTheme.background }}>
 
             {/* Ambient pulse rings */}
             {isActive && (
@@ -1250,6 +1251,9 @@ export default function MusicPlayerClient() {
     const [desktopYtFading, setDesktopYtFading] = useState(false);
     const [desktopYtPlaying, setDesktopYtPlaying] = useState(false);
     const [desktopCardRect, setDesktopCardRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+    const [ytFullMode, setYtFullMode] = useState(true);  // default full content mode for YouTube
+    const mainContentRef = useRef<HTMLDivElement>(null);
+    const [mainContentRect, setMainContentRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const fadingOutRef = useRef<HTMLAudioElement | null>(null); // holds audio being faded out during crossfade
@@ -1870,6 +1874,27 @@ export default function MusicPlayerClient() {
 
     // ── Global desktop YouTube iframe management ─────────────────────────────────────────────────────
 
+    // Track main content area rect — used for fullscreen YouTube mode positioning.
+    useEffect(() => {
+        const el = mainContentRef.current;
+        if (!el) return;
+        const update = () => {
+            const r = el.getBoundingClientRect();
+            setMainContentRect({ left: r.left, top: r.top, width: r.width, height: r.height });
+        };
+        update();
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+        window.addEventListener('resize', update);
+        return () => { ro.disconnect(); window.removeEventListener('resize', update); };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Reset full video mode: true (full) for YouTube, false (card) for MP3/TikTok.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        setYtFullMode(!!slides[activeIndex]?.youtubeId);
+    }, [slides[activeIndex]?.youtubeId]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // Track active card's bounding rect for position:fixed iframe placement.
     // Runs after snap scroll settles so getBoundingClientRect() is accurate.
     useEffect(() => {
@@ -2123,7 +2148,7 @@ export default function MusicPlayerClient() {
             />
 
             {/* Main content wrapper: music sidebar (300 px) on lg+, track list (256 px) on xl+ */}
-            <div className="h-full flex lg:pl-[300px]">
+            <div ref={mainContentRef} className="h-full flex lg:pl-[300px]">
 
                 {/* Scrollable feed */}
                 <div
@@ -2203,15 +2228,15 @@ export default function MusicPlayerClient() {
             {/* Global Desktop YouTube Iframe — Video Pooling Pattern */}
             {/* position:fixed over the card so the DOM element is NEVER removed from page. */}
             {/* Track changes use postMessage loadVideoById — fullscreen persists across auto-advances. */}
-            {desktopGlobalYtId && desktopCardRect && (
+            {desktopGlobalYtId && (ytFullMode ? mainContentRect : desktopCardRect) && (
                 <div
                     className={`transition-opacity duration-[600ms] ${activeSlide?.youtubeId && !desktopYtFading ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                     style={{
                         position: 'fixed',
-                        left: desktopCardRect.left,
-                        top: desktopCardRect.top + 88,
-                        width: desktopCardRect.width,
-                        height: Math.max(0, desktopCardRect.height - 88 - 130),
+                        left: ytFullMode ? mainContentRect!.left : desktopCardRect!.left,
+                        top: ytFullMode ? mainContentRect!.top : desktopCardRect!.top + 88,
+                        width: ytFullMode ? mainContentRect!.width : desktopCardRect!.width,
+                        height: ytFullMode ? mainContentRect!.height : Math.max(0, desktopCardRect!.height - 88 - 130),
                         zIndex: 20,
                     }}
                     onClick={e => e.stopPropagation()}
@@ -2249,6 +2274,51 @@ export default function MusicPlayerClient() {
                                 <Play className="w-7 h-7 text-white ml-1" />
                             </div>
                         </div>
+                    )}
+
+                    {/* Maximize to full video mode button (card mode only) */}
+                    {!ytFullMode && activeSlide?.youtubeId && (
+                        <button
+                            className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors border border-white/15"
+                            onClick={() => setYtFullMode(true)}
+                        >
+                            <Maximize2 className="w-4 h-4" />
+                        </button>
+                    )}
+
+                    {/* Fullscreen mode UI: minimize button + bottom info/action overlay */}
+                    {ytFullMode && activeSlide?.youtubeId && (
+                        <>
+                            <button
+                                className="absolute top-4 left-4 z-30 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors border border-white/15"
+                                onClick={() => setYtFullMode(false)}
+                            >
+                                <Minimize2 className="w-4 h-4" />
+                            </button>
+                            <div
+                                className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none"
+                                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 55%, transparent 100%)', padding: '56px 24px 24px' }}
+                            >
+                                <div className="flex items-end justify-between">
+                                    <div className="flex-1 min-w-0 mr-4">
+                                        <p className="text-white font-bold text-xl leading-tight truncate drop-shadow">{activeSlide.title}</p>
+                                        {activeSlide.artist && <p className="text-white/65 text-sm mt-1 truncate">{activeSlide.artist}</p>}
+                                    </div>
+                                    <div className="pointer-events-auto flex items-center gap-3 flex-shrink-0">
+                                        <button onClick={() => handleLike(activeSlide.id)}>
+                                            <div className={`w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/10 transition-colors ${likedIds.has(activeSlide.id) ? 'text-red-400' : 'text-white'}`}>
+                                                <Heart className="w-5 h-5" fill={likedIds.has(activeSlide.id) ? 'currentColor' : 'none'} />
+                                            </div>
+                                        </button>
+                                        <button onClick={() => handleSave(activeSlide.id)}>
+                                            <div className={`w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/10 transition-colors ${savedIds.has(activeSlide.id) ? 'text-yellow-400' : 'text-white'}`}>
+                                                {savedIds.has(activeSlide.id) ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
                     )}
                 </div>
             )}

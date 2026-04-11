@@ -1,15 +1,17 @@
 {
-  "$schema": "../gen/schemas/windows-schema.json",
-  "identifier": "main",
-  "description": "WordAI Music capabilities",
-  "windows": ["main"],
-  "permissions": [
-    "core:default",
-    "core:event:default",
-    "core:event:allow-listen",
-    "core:event:allow-unlisten",
-    "core:event:allow-emit",
-    "shell:allow-open",
-    "updater:default"
-  ]
+    "$schema": "../gen/schemas/windows-schema.json",
+    "identifier": "main",
+    "description": "WordAI Music capabilities",
+    "windows": [
+        "main"
+    ],
+    "permissions": [
+        "core:default",
+        "core:event:default",
+        "core:event:allow-listen",
+        "core:event:allow-unlisten",
+        "core:event:allow-emit",
+        "shell:allow-open",
+        "updater:default"
+    ]
 }

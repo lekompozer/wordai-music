@@ -1,40 +1,40 @@
 {
-  "name": "wordai-music",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --webpack --port 3001",
-    "dev:port3001": "next dev --webpack --port 3001",
-    "dev:desktop": "bash scripts/dev.sh",
-    "build": "next build --webpack",
-    "build:desktop-app": "bash scripts/build-desktop.sh",
-    "start": "next start",
-    "lint": "eslint",
-    "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "@tauri-apps/api": "^2.10.1",
-    "audiomotion-analyzer": "^4.5.4",
-    "firebase": "^11.8.1",
-    "lucide-react": "^0.511.0",
-    "next": "15.5.3",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^2.10.0",
-    "@types/node": "^22",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "autoprefixer": "^10.4.21",
-    "eslint": "^9",
-    "eslint-config-next": "15.5.3",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5"
-  }
+    "name": "wordai-music",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev --port 3001",
+        "dev:port3001": "next dev --port 3001",
+        "dev:desktop": "bash scripts/dev.sh",
+        "build": "next build",
+        "build:desktop-app": "bash scripts/build-desktop.sh",
+        "start": "next start",
+        "lint": "eslint",
+        "tauri:dev": "tauri dev",
+        "tauri:build": "tauri build"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "dependencies": {
+        "@tauri-apps/api": "^2.10.1",
+        "audiomotion-analyzer": "^4.5.4",
+        "firebase": "^11.8.1",
+        "lucide-react": "^0.511.0",
+        "next": "15.5.3",
+        "react": "^19.1.0",
+        "react-dom": "^19.1.0"
+    },
+    "devDependencies": {
+        "@tauri-apps/cli": "^2.10.0",
+        "@types/node": "^22",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "autoprefixer": "^10.4.21",
+        "eslint": "^9",
+        "eslint-config-next": "15.5.3",
+        "postcss": "^8",
+        "tailwindcss": "^3.4.17",
+        "typescript": "^5"
+    }
 }
