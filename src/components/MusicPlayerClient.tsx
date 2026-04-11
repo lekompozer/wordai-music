@@ -1272,7 +1272,7 @@ export default function MusicPlayerClient() {
     const desktopFbIframeRef = useRef<HTMLIFrameElement | null>(null);
     const [desktopFbEmbedUrl, setDesktopFbEmbedUrl] = useState<string | null>(null);
     const [desktopFbFading, setDesktopFbFading] = useState(false);
-    const [desktopFbUnmuted, setDesktopFbUnmuted] = useState(false);
+    const desktopFbGestureRef = useRef(false); // true when track switch was triggered by a user gesture
     const desktopFbEndedFiredRef = useRef(false);
     const desktopFbEndedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -2043,11 +2043,18 @@ export default function MusicPlayerClient() {
         const fbHref = isReel
             ? `https://www.facebook.com/reel/${fbId}`
             : `https://www.facebook.com/watch?v=${fbId}`;
-        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fbHref)}&show_text=false&autoplay=1&muted=1&loop=0`;
+        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fbHref)}&show_text=false&autoplay=1&muted=${desktopFbGestureRef.current ? '0' : '1'}&loop=0`;
+        const isGesture = desktopFbGestureRef.current;
+        desktopFbGestureRef.current = false;
         setDesktopFbFading(false);
         setDesktopFbEmbedUrl(embedUrl);
-        setDesktopFbUnmuted(false);
         desktopFbEndedFiredRef.current = false;
+
+        // When triggered by a user gesture, click the iframe after it loads to transfer
+        // user activation — browsers may allow unmuted autoplay on the first interaction.
+        if (isGesture) {
+            setTimeout(() => { desktopFbIframeRef.current?.click(); }, 500);
+        }
 
         if (desktopFbEndedTimerRef.current) clearTimeout(desktopFbEndedTimerRef.current);
 
@@ -2071,12 +2078,6 @@ export default function MusicPlayerClient() {
         };
         window.addEventListener('message', onFbMessage);
 
-        // Detect user clicking inside the FB iframe via window blur — dismiss unmute hint
-        const onWindowBlur = () => {
-            if (document.activeElement?.tagName === 'IFRAME') setDesktopFbUnmuted(true);
-        };
-        window.addEventListener('blur', onWindowBlur);
-
         // Fallback timer: use track duration when known, otherwise 3 minutes
         const track = slides[activeIndex];
         const fallbackMs = (track?.durationSec ?? 0) > 10 ? ((track?.durationSec ?? 0) + 5) * 1000 : 3 * 60 * 1000;
@@ -2084,7 +2085,6 @@ export default function MusicPlayerClient() {
 
         return () => {
             window.removeEventListener('message', onFbMessage);
-            window.removeEventListener('blur', onWindowBlur);
             clearTimeout(fallbackTimer);
             if (desktopFbEndedTimerRef.current) clearTimeout(desktopFbEndedTimerRef.current);
         };
@@ -2111,6 +2111,7 @@ export default function MusicPlayerClient() {
     const handleSelectChannel = useCallback((slug: ChannelSlug) => {
         if (slug === selectedChannel) return;
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
+        desktopFbGestureRef.current = true; // sidebar channel click is a user gesture
         stopIframeMedia();
         setSelectedChannel(slug);
         setCurrentTime(0);
@@ -2199,6 +2200,7 @@ export default function MusicPlayerClient() {
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: orderedTracks.slice(0, 50) });
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
+        desktopFbGestureRef.current = true; // sidebar click is a user gesture
         stopIframeMedia();
         // Prevent IntersectionObserver from interfering during slide array swap
         isSwitchingChannel.current = true;
@@ -2466,15 +2468,6 @@ export default function MusicPlayerClient() {
                         allowFullScreen
                         scrolling="no"
                     />
-                    {/* Unmute hint — pointer-events-none so clicks pass through to the FB iframe */}
-                    {activeSlide?.facebookId && !desktopFbFading && !desktopFbUnmuted && (
-                        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none select-none">
-                            <div className="flex items-center gap-2 rounded-full bg-black/70 backdrop-blur-md px-4 py-2 text-white text-xs font-medium shadow-xl ring-1 ring-white/10">
-                                <Volume2 className="w-3.5 h-3.5 text-blue-400" />
-                                <span>Click 🔊 in video to unmute</span>
-                            </div>
-                        </div>
-                    )}
                     {/* Fullscreen info overlay */}
                     {ytFullMode && activeSlide?.facebookId && (
                         <>
