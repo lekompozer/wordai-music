@@ -1272,6 +1272,7 @@ export default function MusicPlayerClient() {
     const desktopFbIframeRef = useRef<HTMLIFrameElement | null>(null);
     const [desktopFbEmbedUrl, setDesktopFbEmbedUrl] = useState<string | null>(null);
     const [desktopFbFading, setDesktopFbFading] = useState(false);
+    const [desktopFbUnmuted, setDesktopFbUnmuted] = useState(false);
     const desktopFbEndedFiredRef = useRef(false);
     const desktopFbEndedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -2042,9 +2043,10 @@ export default function MusicPlayerClient() {
         const fbHref = isReel
             ? `https://www.facebook.com/reel/${fbId}`
             : `https://www.facebook.com/watch?v=${fbId}`;
-        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fbHref)}&show_text=false&autoplay=1&muted=1`;
+        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fbHref)}&show_text=false&autoplay=1&muted=1&loop=0`;
         setDesktopFbFading(false);
         setDesktopFbEmbedUrl(embedUrl);
+        setDesktopFbUnmuted(false);
         desktopFbEndedFiredRef.current = false;
 
         if (desktopFbEndedTimerRef.current) clearTimeout(desktopFbEndedTimerRef.current);
@@ -2059,24 +2061,30 @@ export default function MusicPlayerClient() {
             }, 600);
         };
 
-        // Listen for Facebook postMessage ended events
+        // Listen for Facebook postMessage ended events (format varies by embed version — search all values)
         const onFbMessage = (e: MessageEvent) => {
             if (!String(e.origin).includes('facebook.com')) return;
             try {
-                const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-                const evType = data?.type || data?.event || data?.action || '';
-                if (/end|finish|complete/i.test(String(evType))) triggerFbEnd();
+                const raw = typeof e.data === 'string' ? e.data : JSON.stringify(e.data);
+                if (/video[_:]end|finished.?playing|playback.?end|video.?ended/i.test(raw)) triggerFbEnd();
             } catch { }
         };
         window.addEventListener('message', onFbMessage);
 
-        // Facebook doesn't expose a reliable ended event — use duration-based fallback timer
+        // Detect user clicking inside the FB iframe via window blur — dismiss unmute hint
+        const onWindowBlur = () => {
+            if (document.activeElement?.tagName === 'IFRAME') setDesktopFbUnmuted(true);
+        };
+        window.addEventListener('blur', onWindowBlur);
+
+        // Fallback timer: use track duration when known, otherwise 3 minutes
         const track = slides[activeIndex];
-        const fallbackMs = (track?.durationSec ?? 0) > 10 ? ((track?.durationSec ?? 0) + 5) * 1000 : 300000; // 5min default if unknown
+        const fallbackMs = (track?.durationSec ?? 0) > 10 ? ((track?.durationSec ?? 0) + 5) * 1000 : 3 * 60 * 1000;
         const fallbackTimer = setTimeout(triggerFbEnd, fallbackMs);
 
         return () => {
             window.removeEventListener('message', onFbMessage);
+            window.removeEventListener('blur', onWindowBlur);
             clearTimeout(fallbackTimer);
             if (desktopFbEndedTimerRef.current) clearTimeout(desktopFbEndedTimerRef.current);
         };
@@ -2457,7 +2465,7 @@ export default function MusicPlayerClient() {
                         scrolling="no"
                     />
                     {/* Unmute hint — pointer-events-none so clicks pass through to the FB iframe */}
-                    {activeSlide?.facebookId && !desktopFbFading && (
+                    {activeSlide?.facebookId && !desktopFbFading && !desktopFbUnmuted && (
                         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none select-none">
                             <div className="flex items-center gap-2 rounded-full bg-black/70 backdrop-blur-md px-4 py-2 text-white text-xs font-medium shadow-xl ring-1 ring-white/10">
                                 <Volume2 className="w-3.5 h-3.5 text-blue-400" />

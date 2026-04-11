@@ -547,7 +547,7 @@ export default function MusicPlayerMobile() {
         const fbId = activeSlideFbId;
         const isReel = !!slides[activeIndex]?.facebookIsReel;
         const fbHref = isReel ? `https://www.facebook.com/reel/${fbId}` : `https://www.facebook.com/watch?v=${fbId}`;
-        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fbHref)}&show_text=false&autoplay=1&muted=1`;
+        const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(fbHref)}&show_text=false&autoplay=1&muted=1&loop=0`;
         setMobileFbFading(false);
         setMobileFbEmbedUrl(embedUrl);
         mobileFbEndedFiredRef.current = false;
@@ -571,20 +571,19 @@ export default function MusicPlayerMobile() {
             }, 600);
         };
 
-        // Listen for Facebook postMessage events (newer embed versions send these)
+        // Listen for Facebook postMessage ended events (format varies by embed version — search all values)
         const onFbMessage = (e: MessageEvent) => {
             if (!String(e.origin).includes('facebook.com')) return;
             try {
-                const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-                // Facebook sends various event shapes depending on embed version
-                const evType = data?.type || data?.event || data?.action || '';
-                if (/end|finish|complete/i.test(String(evType))) triggerFbEnd();
+                const raw = typeof e.data === 'string' ? e.data : JSON.stringify(e.data);
+                if (/video[_:]end|finished.?playing|playback.?end|video.?ended/i.test(raw)) triggerFbEnd();
             } catch { }
         };
         window.addEventListener('message', onFbMessage);
 
+        // Fallback timer: use track duration when known, otherwise 3 minutes
         const track = slides[activeIndex];
-        const fallbackMs = (track?.durationSec ?? 0) > 10 ? ((track?.durationSec ?? 0) + 5) * 1000 : 300000; // 5min default if unknown
+        const fallbackMs = (track?.durationSec ?? 0) > 10 ? ((track?.durationSec ?? 0) + 5) * 1000 : 3 * 60 * 1000;
         const fallbackTimer = setTimeout(triggerFbEnd, fallbackMs);
 
         return () => {
