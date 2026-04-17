@@ -505,7 +505,12 @@ export function resumeVisualizerCtx() {
     // Chrome/Safari accept the resume() even before any useEffect has run.
     const ctx = getSharedAudioCtx();
     if (ctx && ctx.state !== 'running') {
-        ctx.resume().catch(() => { /* ignore */ });
+        ctx.resume().then(() => {
+            // Notify AudioVisualizer instances that context is now running
+            if (typeof window !== 'undefined') window.dispatchEvent(new Event('audioCtxReady'));
+        }).catch(() => { /* ignore */ });
+    } else if (ctx && ctx.state === 'running') {
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('audioCtxReady'));
     }
 }
 
@@ -517,6 +522,17 @@ function AudioVisualizer({ audioEl, accent }: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const instanceRef = useRef<any>(null);
     const prevElRef = useRef<HTMLAudioElement | null>(null);
+    // ctxReady: becomes true once the AudioContext is running (after first user gesture).
+    // Adding it to useEffect deps forces the visualizer to retry connection after gesture.
+    const [ctxReady, setCtxReady] = useState(false);
+
+    useEffect(() => {
+        // Check immediately in case context was already resumed
+        if (_sharedAudioCtx?.state === 'running') { setCtxReady(true); return; }
+        const handler = () => { if (_sharedAudioCtx?.state === 'running') setCtxReady(true); };
+        window.addEventListener('audioCtxReady', handler);
+        return () => window.removeEventListener('audioCtxReady', handler);
+    }, []);
 
     useEffect(() => {
         const container = containerRef.current;
@@ -556,29 +572,25 @@ function AudioVisualizer({ audioEl, accent }: {
             instanceRef.current = null;
         }
 
-        // Get or create the shared AudioContext. It starts suspended if created before a user
-        // gesture, but resumeVisualizerCtx() (called on every click/touchstart) will resume it.
-        // Using a single external context means am.destroy() on track-switch never closes it,
-        // so the context stays running for all subsequent tracks after the first user gesture.
-        const sharedCtx = getSharedAudioCtx();
-        if (sharedCtx) {
-            sharedCtx.resume().catch(() => { /* will succeed after first user gesture */ });
-        }
+        // Only use an existing AudioContext that is already running.
+        // NEVER call getSharedAudioCtx() here — that creates a new suspended context,
+        // and createMediaElementSource() on a suspended context silently kills audio output.
+        // The context will be created + resumed by resumeVisualizerCtx() on first user gesture,
+        // which dispatches 'audioCtxReady' → ctxReady state → this effect re-runs.
 
         const capturedEl = audioEl;
-        // Use async callback so we can await resume() BEFORE createMediaElementSource.
-        // The AudioMotionAnalyzer constructor internally calls createMediaElementSource()
-        // (via the `source` option). If the AudioContext is still suspended at that moment
-        // the audio is silently rerouted to a dead graph — audio.paused stays false but
-        // no sound comes out. Awaiting resume() first guarantees the context is running.
         void import('audiomotion-analyzer').then(async ({ default: AudioMotionAnalyzer }) => {
             if (!containerRef.current || prevElRef.current !== capturedEl) return;
 
-            // Resume before connecting — safe to call multiple times, always resolves
-            if (sharedCtx) {
-                try { await sharedCtx.resume(); } catch { /* blocked — retry on next gesture */ }
+            // Re-fetch context inside async callback (may have become available since effect ran)
+            const ctx = getExistingAudioCtx();
+            if (!ctx || ctx.state !== 'running') {
+                // Context not ready yet — audio plays to speakers without WebAudio capture.
+                // Will retry when 'audioCtxReady' fires (ctxReady state changes).
+                return;
             }
-            // Guard again: track may have changed while waiting for resume()
+
+            // Guard again: track may have changed while waiting
             if (!containerRef.current || prevElRef.current !== capturedEl) return;
 
             let sourceToPass: HTMLAudioElement | AudioNode = capturedEl;
@@ -586,15 +598,13 @@ function AudioVisualizer({ audioEl, accent }: {
             // Create and cache the MediaElementAudioSourceNode on the audio element.
             // This prevents "InvalidStateError" if it is initialized twice, and allows us
             // to recover the output routing later when the visualizer unmounts.
-            if (sharedCtx) {
-                if (!(capturedEl as any)._audioSourceNode) {
-                    try {
-                        (capturedEl as any)._audioSourceNode = sharedCtx.createMediaElementSource(capturedEl);
-                    } catch { /* already created by another library/call */ }
-                }
-                if ((capturedEl as any)._audioSourceNode) {
-                    sourceToPass = (capturedEl as any)._audioSourceNode as AudioNode;
-                }
+            if (!(capturedEl as any)._audioSourceNode) {
+                try {
+                    (capturedEl as any)._audioSourceNode = ctx.createMediaElementSource(capturedEl);
+                } catch { /* already created by another library/call */ }
+            }
+            if ((capturedEl as any)._audioSourceNode) {
+                sourceToPass = (capturedEl as any)._audioSourceNode as AudioNode;
             }
 
             try {
@@ -605,7 +615,7 @@ function AudioVisualizer({ audioEl, accent }: {
                     return `rgba(${r},${g},${b},${a})`;
                 };
                 const am = new AudioMotionAnalyzer(containerRef.current, {
-                    ...(sharedCtx ? { audioCtx: sharedCtx } : {}),
+                    audioCtx: ctx,
                     source: sourceToPass,
                     mode: 2,
                     gradient: 'prism',
@@ -652,13 +662,14 @@ function AudioVisualizer({ audioEl, accent }: {
                 // When AudioMotion is destroyed, it unhooks its AudioNodes from destination.
                 // If this track is fading out during crossfade, it needs to keep outputting audio!
                 // We manually reconnect the cached MediaElementAudioSourceNode to speakers.
-                if (sharedCtx && (capturedEl as any)._audioSourceNode) {
+                const existingCtx = getExistingAudioCtx();
+                if (existingCtx && (capturedEl as any)._audioSourceNode) {
                     try { (capturedEl as any)._audioSourceNode.disconnect(); } catch { }
-                    try { (capturedEl as any)._audioSourceNode.connect(sharedCtx.destination); } catch { }
+                    try { (capturedEl as any)._audioSourceNode.connect(existingCtx.destination); } catch { }
                 }
             }
         };
-    }, [audioEl, accent]);
+    }, [audioEl, accent, ctxReady]); // ctxReady dep: re-run once context becomes available
 
     return <div ref={containerRef} className="w-full h-full" />;
 }
@@ -2279,7 +2290,7 @@ export default function MusicPlayerClient() {
                 isVietnamese={isVietnamese}
                 desktopPinned
                 leftOffset={0}
-                topOffset={28}
+                topOffset={72}
                 currentTrackId={activeSlide?.id}
                 isShuffle={isShuffle}
                 onToggleShuffle={() => setIsShuffle(v => { saveShuffleState(!v); return !v; })}
