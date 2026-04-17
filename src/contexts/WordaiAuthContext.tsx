@@ -172,7 +172,8 @@ export function WordaiAuthProvider({ children }: { children: ReactNode }) {
                 try {
                     // @capacitor-firebase/authentication is not installed in wordai-music (Tauri-only app).
                     // This code path is unreachable here (isCapacitorNative() is always false).
-                    const FirebaseAuthentication = await (async () => { throw new Error('Capacitor not available'); })();
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const FirebaseAuthentication = await (async (): Promise<any> => { throw new Error('Capacitor not available'); })();
                     void FirebaseAuthentication;
                     const result = await FirebaseAuthentication.signInWithGoogle();
                     if (!result.credential?.idToken) throw new Error('No idToken from native Google Auth');
