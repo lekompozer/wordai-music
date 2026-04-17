@@ -6,7 +6,8 @@
   "build": {
     "frontendDist": "../out",
     "devUrl": "http://localhost:3001",
-    "beforeDevCommand": "bash scripts/tauri-dev.sh"
+    "beforeDevCommand": "bash scripts/tauri-dev.sh",
+    "beforeBuildCommand": "npm run build"
   },
   "app": {
     "security": {
