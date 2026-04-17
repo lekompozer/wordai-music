@@ -1,51 +1,51 @@
 {
-    "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-    "productName": "WordAI Music",
-    "version": "0.1.1",
-    "identifier": "pro.wordai.music",
-    "build": {
-        "frontendDist": "../out",
-        "devUrl": "http://localhost:3001",
-        "beforeDevCommand": "bash scripts/tauri-dev.sh"
-    },
-    "app": {
-        "security": {
-            "csp": null
-        }
-    },
-    "plugins": {
-        "updater": {
-            "endpoints": [
-                "https://pub-9e0c13107bce4befa1b3def86de29eb0.r2.dev/desktop-music/latest.json"
-            ],
-            "pubkey": "",
-            "dialog": false
-        }
-    },
-    "bundle": {
-        "active": true,
-        "createUpdaterArtifacts": true,
-        "targets": "all",
-        "publisher": "WordAI",
-        "category": "Music",
-        "shortDescription": "Free unlimited music player — TikTok & YouTube to MP3, no ads",
-        "icon": [
-            "icons/32x32.png",
-            "icons/128x128.png",
-            "icons/128x128@2x.png",
-            "icons/icon.icns",
-            "icons/icon.ico"
-        ],
-        "macOS": {
-            "minimumSystemVersion": "10.15",
-            "entitlements": "entitlements.plist",
-            "signingIdentity": "-"
-        },
-        "windows": {
-            "wix": {},
-            "nsis": {
-                "installMode": "currentUser"
-            }
-        }
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "WordAI Music",
+  "version": "0.1.2",
+  "identifier": "pro.wordai.music",
+  "build": {
+    "frontendDist": "../out",
+    "devUrl": "http://localhost:3001",
+    "beforeDevCommand": "bash scripts/tauri-dev.sh"
+  },
+  "app": {
+    "security": {
+      "csp": null
     }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://pub-9e0c13107bce4befa1b3def86de29eb0.r2.dev/desktop-music/latest.json"
+      ],
+      "pubkey": "",
+      "dialog": false
+    }
+  },
+  "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "targets": "all",
+    "publisher": "WordAI",
+    "category": "Music",
+    "shortDescription": "Free unlimited music player — TikTok & YouTube to MP3, no ads",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "10.15",
+      "entitlements": "entitlements.plist",
+      "signingIdentity": "-"
+    },
+    "windows": {
+      "wix": {},
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  }
 }
