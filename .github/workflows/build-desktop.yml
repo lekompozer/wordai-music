@@ -146,7 +146,7 @@ jobs:
           prerelease: false
           args: ${{ matrix.args }}
 
-      # ── Upload artifacts ──────────────────────────────────────────────────
+      # ── Upload artifacts to GitHub ────────────────────────────────────────
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -160,3 +160,126 @@ jobs:
             ${{ matrix.bundle_path }}/deb/*.deb
           if-no-files-found: warn
           retention-days: 30
+
+      # ── Upload artifacts to R2 (using aws cli — pre-installed on all runners) ──
+      - name: Upload macOS arm64 DMG to R2
+        if: matrix.rust_target == 'aarch64-apple-darwin'
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+        run: |
+          DMG=$(find src-tauri/target -name "*.dmg" 2>/dev/null | head -1)
+          if [ -z "$DMG" ]; then echo "❌ No DMG found"; exit 1; fi
+          echo "📦 Uploading $DMG → desktop-music/WordAI-Music-mac-arm64.dmg"
+          aws s3 cp "$DMG" "s3://${R2_BUCKET_NAME}/desktop-music/WordAI-Music-mac-arm64.dmg" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --content-type "application/x-apple-diskimage" \
+            --cache-control "public, max-age=3600"
+          echo "✅ Uploaded arm64 DMG"
+
+      - name: Upload macOS x64 DMG to R2
+        if: matrix.rust_target == 'x86_64-apple-darwin'
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+        run: |
+          DMG=$(find src-tauri/target -name "*.dmg" 2>/dev/null | head -1)
+          if [ -z "$DMG" ]; then echo "❌ No DMG found"; exit 1; fi
+          echo "📦 Uploading $DMG → desktop-music/WordAI-Music-mac-x64.dmg"
+          aws s3 cp "$DMG" "s3://${R2_BUCKET_NAME}/desktop-music/WordAI-Music-mac-x64.dmg" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --content-type "application/x-apple-diskimage" \
+            --cache-control "public, max-age=3600"
+          echo "✅ Uploaded x64 DMG"
+
+      - name: Upload Windows installer to R2
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+        run: |
+          EXE=$(find src-tauri/target -name "*-setup.exe" 2>/dev/null | head -1)
+          if [ -z "$EXE" ]; then EXE=$(find src-tauri/target -name "*.msi" 2>/dev/null | head -1); fi
+          if [ -z "$EXE" ]; then echo "❌ No Windows installer found"; exit 1; fi
+          KEY="desktop-music/WordAI-Music-windows-setup.exe"
+          CT="application/x-msdownload"
+          if [[ "$EXE" == *.msi ]]; then KEY="desktop-music/WordAI-Music-windows-setup.msi"; CT="application/x-msi"; fi
+          echo "📦 Uploading $EXE → $KEY"
+          aws s3 cp "$EXE" "s3://${R2_BUCKET_NAME}/${KEY}" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --content-type "$CT" \
+            --cache-control "public, max-age=3600"
+          echo "✅ Uploaded Windows installer"
+
+      - name: Upload Linux AppImage to R2
+        if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+        run: |
+          APP=$(find src-tauri/target -name "*.AppImage" 2>/dev/null | head -1)
+          if [ -z "$APP" ]; then echo "❌ No AppImage found"; exit 1; fi
+          echo "📦 Uploading $APP → desktop-music/WordAI-Music-linux.AppImage"
+          aws s3 cp "$APP" "s3://${R2_BUCKET_NAME}/desktop-music/WordAI-Music-linux.AppImage" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --content-type "application/x-executable" \
+            --cache-control "public, max-age=3600"
+          echo "✅ Uploaded Linux AppImage"
+
+# ── Generate latest.json update manifest (runs after all platform builds) ──
+  update-manifest:
+    needs: build
+    runs-on: ubuntu-22.04
+    name: Update manifest (latest.json)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate and upload latest.json
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          NEXT_PUBLIC_R2_PUBLIC_URL: ${{ secrets.NEXT_PUBLIC_R2_PUBLIC_URL }}
+        run: |
+          VERSION=$(node -e "const c=require('./src-tauri/tauri.conf.json'); console.log(c.version)")
+          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          CDN="${NEXT_PUBLIC_R2_PUBLIC_URL}/desktop-music"
+          cat > /tmp/latest.json <<EOF
+          {
+            "version": "${VERSION}",
+            "notes": "WynAI Music ${VERSION}",
+            "pub_date": "${PUB_DATE}",
+            "platforms": {
+              "darwin-aarch64": { "url": "${CDN}/WordAI-Music-mac-arm64.dmg" },
+              "darwin-x86_64":  { "url": "${CDN}/WordAI-Music-mac-x64.dmg" },
+              "windows-x86_64": { "url": "${CDN}/WordAI-Music-windows-setup.exe" },
+              "linux-x86_64":   { "url": "${CDN}/WordAI-Music-linux.AppImage" }
+            }
+          }
+          EOF
+          echo "📋 latest.json:"
+          cat /tmp/latest.json
+          aws s3 cp /tmp/latest.json "s3://${R2_BUCKET_NAME}/desktop-music/latest.json" \
+            --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
+            --content-type "application/json" \
+            --cache-control "public, max-age=300"
+          echo "✅ latest.json uploaded to R2 at desktop-music/latest.json"
