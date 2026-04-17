@@ -1620,7 +1620,9 @@ export default function MusicPlayerClient() {
             currentBlobUrlRef.current = blobUrl;
 
             const audio = new Audio();
-            audio.crossOrigin = 'anonymous';
+            // Do NOT set crossOrigin='anonymous' — it causes CORS preflight failures
+            // on CDN MP3s that lack CORS headers, triggering instant error→advanceToNext.
+            // The AudioVisualizer handles createMediaElementSource failure gracefully.
             audio.volume = volume;
             audioRef.current = audio;
 

@@ -53,8 +53,8 @@ export default function MusicHeader() {
                 <span className="text-sm font-semibold text-white/90 tracking-wide">WynAI Music</span>
             </div>
 
-            {/* Right: controls */}
-            <div className="flex items-center gap-2">
+            {/* Right: controls — stopPropagation on mousedown prevents drag region from swallowing clicks */}
+            <div className="flex items-center gap-2" onMouseDown={e => e.stopPropagation()}>
                 {/* Language toggle */}
                 <button
                     onClick={toggleLanguage}
