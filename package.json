@@ -10,6 +10,7 @@
         "build:desktop-app": "bash scripts/build-desktop.sh",
         "start": "next start",
         "lint": "eslint",
+        "tauri": "tauri",
         "tauri:dev": "tauri dev",
         "tauri:build": "tauri build"
     },
