@@ -2278,13 +2278,15 @@ export default function MusicPlayerClient() {
                 isDark={isDark}
                 isVietnamese={isVietnamese}
                 desktopPinned
+                leftOffset={0}
+                topOffset={28}
                 currentTrackId={activeSlide?.id}
                 isShuffle={isShuffle}
                 onToggleShuffle={() => setIsShuffle(v => { saveShuffleState(!v); return !v; })}
             />
 
-            {/* Main content wrapper: music sidebar (300 px) on lg+, track list (256 px) on xl+ */}
-            <div className="h-full flex lg:pl-[300px]">
+            {/* Main content wrapper: music sidebar (320 px default) on lg+, track list (256 px) on xl+ */}
+            <div className="h-full flex lg:pl-[320px]">
 
                 {/* Scrollable feed */}
                 <div

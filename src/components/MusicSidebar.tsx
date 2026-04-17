@@ -78,6 +78,12 @@ export interface MusicSidebarProps {
     currentTrackId?: string;
     isShuffle?: boolean;
     onToggleShuffle?: () => void;
+    /** Left offset in px — override the HomeSidebarCollapsedCtx-based calculation.
+     *  Pass 0 in standalone apps (wordai-music) where no parent sidebar exists. */
+    leftOffset?: number;
+    /** Top offset in px — used to leave room for TitleBarStyle::Overlay traffic lights.
+     *  Pass 28 in wordai-music so the drag area above MusicHeader stays accessible. */
+    topOffset?: number;
 }
 
 function fmtDur(sec: number): string {
@@ -223,6 +229,7 @@ export default function MusicSidebar({
     isOpen, onClose, channels, selectedChannelSlug,
     onSelectChannel, onPlayTracks, onLoadChannelTracks, isDark, isVietnamese, desktopPinned = false,
     currentTrackId, isShuffle = true, onToggleShuffle,
+    leftOffset, topOffset = 0,
 }: MusicSidebarProps) {
     const homeSidebarCollapsed = useContext(HomeSidebarCollapsedCtx);
     const { user } = useWordaiAuth();
@@ -1799,8 +1806,8 @@ export default function MusicSidebar({
         <>
             {/* Sidebar panel */}
             <div
-                className={`fixed top-0 bottom-0 z-[400] flex flex-col shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
-                style={{ ...panelStyle, width: isMobileViewport ? 300 : sidebarWidth, borderRight: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}`, left: isMobileViewport ? 0 : (homeSidebarCollapsed ? 52 : 252) }}
+                className={`fixed bottom-0 z-[400] flex flex-col shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-transform duration-300 ${topOffset === 0 ? 'top-0' : ''} ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+                style={{ ...panelStyle, width: isMobileViewport ? 300 : sidebarWidth, borderRight: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}`, left: isMobileViewport ? 0 : (leftOffset ?? (homeSidebarCollapsed ? 52 : 252)), top: topOffset > 0 ? topOffset : undefined }}
             >
                 {/* Resize handle — desktop only */}
                 <div
@@ -1809,8 +1816,8 @@ export default function MusicSidebar({
                 >
                     <div className={`absolute inset-y-0 right-0 w-px transition-colors group-hover:w-[3px] ${effectiveDark ? 'bg-white/10 group-hover:bg-indigo-500/60' : 'bg-slate-200 group-hover:bg-indigo-400/70'}`} />
                 </div>
-                {/* Header */}
-                <div className={`flex-shrink-0 flex items-center justify-between px-4 py-3 border-b ${border}`}>
+                {/* Header — data-tauri-drag-region allows dragging the window from the sidebar title bar */}
+                <div data-tauri-drag-region className={`flex-shrink-0 flex items-center justify-between px-4 py-3 border-b ${border}`}>
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-2xl flex items-center justify-center text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]" style={{ background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' }}>
                             <AudioWaveform className="w-4 h-4 text-white" />
@@ -1869,7 +1876,7 @@ export default function MusicSidebar({
                 <div
                     className={`fixed z-[500] pointer-events-none px-3.5 py-2.5 rounded-xl shadow-xl border max-w-[240px] transition-opacity duration-150`}
                     style={{
-                        left: (isMobileViewport ? 300 : (homeSidebarCollapsed ? 52 : 252) + sidebarWidth) + 10,
+                        left: (isMobileViewport ? 300 : (leftOffset ?? (homeSidebarCollapsed ? 52 : 252)) + sidebarWidth) + 10,
                         top: hoverInfo.y - 36,
                         ...(effectiveDark
                             ? { background: '#0e1832', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }
