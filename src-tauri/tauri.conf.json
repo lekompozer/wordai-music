@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "WordAI Music",
+  "productName": "WynAI Music",
   "version": "0.1.2",
   "identifier": "pro.wordai.music",
   "build": {

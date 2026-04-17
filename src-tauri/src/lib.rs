@@ -46,7 +46,7 @@ pub fn run() {
                 // Dev: load from Next.js dev server (devUrl in tauri.conf.json)
                 WebviewUrl::App("index.html".into()),
             )
-            .title("WordAI Music")
+            .title("WynAI Music")
             .inner_size(1100.0, 780.0)
             .min_inner_size(800.0, 600.0)
             .center()
@@ -56,7 +56,7 @@ pub fn run() {
             .initialization_script(
                 "window.__TAURI_DESKTOP__ = true; \
                  window.__WORDAI_ERRORS__ = []; \
-                 console.log('[WordAI Music] v0.1.0 desktop runtime active');"
+                 console.log('[WynAI Music] v0.1.0 desktop runtime active');"
             )
             .build()?;
 
@@ -68,5 +68,5 @@ pub fn run() {
             google_auth::open_google_auth,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running WordAI Music");
+        .expect("error while running WynAI Music");
 }
