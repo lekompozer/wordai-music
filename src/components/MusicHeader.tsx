@@ -46,10 +46,11 @@ export default function MusicHeader() {
                 <span className="text-sm font-semibold text-white/90 tracking-wide">WynAI Music</span>
             </div>
 
-            {/* Right: controls — stopPropagation on mousedown prevents drag region from swallowing clicks */}
-            <div className="flex items-center gap-2" onMouseDown={e => e.stopPropagation()}>
+            {/* Right: controls — stopPropagation on each button's mousedown to keep the header draggable */}
+            <div className="flex items-center gap-2">
                 {/* Language toggle */}
                 <button
+                    onMouseDown={e => e.stopPropagation()}
                     onClick={toggleLanguage}
                     className="flex items-center gap-1 px-2 py-1 rounded text-xs text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                     title="Toggle language"
@@ -60,6 +61,7 @@ export default function MusicHeader() {
 
                 {/* Theme toggle */}
                 <button
+                    onMouseDown={e => e.stopPropagation()}
                     onClick={toggleTheme}
                     className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                     title={isDark ? 'Switch to light' : 'Switch to dark'}
@@ -87,6 +89,7 @@ export default function MusicHeader() {
                             {user.displayName ?? user.email}
                         </span>
                         <button
+                            onMouseDown={e => e.stopPropagation()}
                             onClick={() => signOut()}
                             className="p-1.5 rounded text-gray-500 hover:text-red-400 hover:bg-white/10 transition-colors"
                             title={t('Đăng xuất', 'Sign out', isVietnamese)}
@@ -96,6 +99,7 @@ export default function MusicHeader() {
                     </div>
                 ) : (
                     <button
+                        onMouseDown={e => e.stopPropagation()}
                         onClick={handleLogin}
                         disabled={signingIn}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-xs font-medium rounded-lg transition-colors active:scale-95"

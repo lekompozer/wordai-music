@@ -2393,7 +2393,7 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopYtIframeRef}
-                        src={`https://www.youtube.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+                        src={`https://www.youtube.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://www.wordai.pro`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
