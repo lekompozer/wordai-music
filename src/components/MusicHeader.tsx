@@ -12,7 +12,7 @@
  */
 
 import { useState } from 'react';
-import { Music2, LogIn, LogOut, Globe, Sun, Moon, User, X } from 'lucide-react';
+import { Music2, LogIn, LogOut, Globe, Sun, Moon, User } from 'lucide-react';
 import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
 import { useTheme, useLanguage } from '@/contexts/AppContext';
 
@@ -35,19 +35,12 @@ export default function MusicHeader() {
         }
     };
 
-    const handleClose = async () => {
-        if (typeof window !== 'undefined' && (window as any).__TAURI_INTERNALS__) {
-            const { getCurrentWindow } = await import('@tauri-apps/api/window');
-            await getCurrentWindow().close();
-        }
-    };
-
     return (
         <header
             data-tauri-drag-region
-            className="flex-shrink-0 flex items-center justify-between px-4 h-11 bg-black/40 border-b border-white/5 select-none"
+            className="flex-shrink-0 flex items-center justify-between pl-[72px] pr-4 h-11 bg-black/40 border-b border-white/5 select-none"
         >
-            {/* Left: Logo */}
+            {/* Left: Logo — traffic lights occupy leftmost ~70px on macOS */}
             <div className="flex items-center gap-2">
                 <Music2 className="w-4 h-4 text-indigo-400" />
                 <span className="text-sm font-semibold text-white/90 tracking-wide">WynAI Music</span>
@@ -114,14 +107,6 @@ export default function MusicHeader() {
                     </button>
                 )}
 
-                {/* Close button (Tauri only) */}
-                <button
-                    onClick={handleClose}
-                    className="p-1.5 rounded text-gray-500 hover:text-white hover:bg-red-500/80 transition-colors"
-                    title="Close"
-                >
-                    <X className="w-3.5 h-3.5" />
-                </button>
             </div>
         </header>
     );

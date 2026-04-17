@@ -51,8 +51,10 @@ pub fn run() {
             .min_inner_size(800.0, 600.0)
             .center()
             .resizable(true)
-            // Hide native title bar — MusicHeader provides a custom one
-            .decorations(false)
+            // macOS: hidden title bar — shows traffic lights (close/min/max) but no title text,
+            // content fills the full window height. MusicHeader sits below the traffic lights.
+            .title_bar_style(tauri::TitleBarStyle::Overlay)
+            .hidden_title(true)
             .initialization_script(
                 "window.__TAURI_DESKTOP__ = true; \
                  window.__WORDAI_ERRORS__ = []; \
