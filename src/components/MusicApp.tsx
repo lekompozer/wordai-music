@@ -33,7 +33,11 @@ export default function MusicApp() {
 
     return (
         <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#06060f]">
-            <MusicHeader />
+            {/* pt-[28px]: macOS Overlay title bar is ~28px tall, keeps traffic lights from overlapping header */}
+            {/* data-tauri-drag-region on wrapper allows dragging the 28px area above the header */}
+            <div className="pt-[28px]" data-tauri-drag-region>
+                <MusicHeader />
+            </div>
             <div className="flex-1 overflow-hidden relative">
                 <PlayerComponent />
             </div>

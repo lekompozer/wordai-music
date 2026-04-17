@@ -1213,9 +1213,9 @@ export default function MusicPlayerClient() {
     const { user } = useWordaiAuth();
 
     const [selectedChannel, setSelectedChannel] = useState<ChannelSlug>(() => {
-        if (typeof window === 'undefined') return 'e52c13ef-9228-4c6a-a30b-f7c5c50c420e';
+        if (typeof window === 'undefined') return 'background-music';
         const ctx = loadLastCtx();
-        return ctx?.type === 'channel' ? ctx.slug : 'e52c13ef-9228-4c6a-a30b-f7c5c50c420e';
+        return ctx?.type === 'channel' ? ctx.slug : 'background-music';
     });
     const [slides, setSlides] = useState<SlideTrack[]>([]);
     const [activeIndex, setActiveIndex] = useState(0);
@@ -1417,7 +1417,7 @@ export default function MusicPlayerClient() {
             setSelectedChannel('playlist' as ChannelSlug);
             setIsLoading(false);
         } else {
-            const slug = ctx?.type === 'channel' ? ctx.slug : 'e52c13ef-9228-4c6a-a30b-f7c5c50c420e';
+            const slug = ctx?.type === 'channel' ? ctx.slug : 'background-music';
             loadAndBuildSlides(slug, true);
         }
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
