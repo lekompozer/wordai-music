@@ -6,7 +6,7 @@
  * Renders: MusicHeader (draggable title bar + Login) + MusicPlayerClientRouter.
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import MusicHeader from './MusicHeader';
 
 // Detect mobile vs desktop to route to correct player
@@ -35,7 +35,7 @@ export default function MusicApp() {
         <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#06060f]">
             {/* pt-[28px]: macOS Overlay title bar is ~28px tall, keeps traffic lights from overlapping header */}
             {/* data-tauri-drag-region on wrapper allows dragging the 28px area above the header */}
-            <div className="pt-[28px]" data-tauri-drag-region>
+            <div className="pt-[28px]" data-tauri-drag-region style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
                 <MusicHeader />
             </div>
             <div className="flex-1 overflow-hidden relative">

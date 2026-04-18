@@ -11,7 +11,7 @@
  * - Theme toggle (dark/light)
  */
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Music2, LogIn, LogOut, Globe, Sun, Moon, User } from 'lucide-react';
 import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
 import { useTheme, useLanguage } from '@/contexts/AppContext';
@@ -38,6 +38,16 @@ export default function MusicHeader() {
     return (
         <header
             data-tauri-drag-region
+            style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+            onMouseDown={async (e) => {
+                // Only drag on primary button click directly on the header (not buttons)
+                if (e.button !== 0) return;
+                if ((e.target as HTMLElement).closest('button,a,input,select')) return;
+                try {
+                    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+                    await getCurrentWindow().startDragging();
+                } catch { /* web fallback: handled by WebkitAppRegion */ }
+            }}
             className="flex-shrink-0 flex items-center justify-between pl-[72px] pr-4 h-11 bg-black/40 border-b border-white/5 select-none"
         >
             {/* Left: Logo — traffic lights occupy leftmost ~70px on macOS */}
@@ -52,6 +62,7 @@ export default function MusicHeader() {
                 <button
                     onMouseDown={e => e.stopPropagation()}
                     onClick={toggleLanguage}
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     className="flex items-center gap-1 px-2 py-1 rounded text-xs text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                     title="Toggle language"
                 >
@@ -63,6 +74,7 @@ export default function MusicHeader() {
                 <button
                     onMouseDown={e => e.stopPropagation()}
                     onClick={toggleTheme}
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
                     title={isDark ? 'Switch to light' : 'Switch to dark'}
                 >
@@ -91,6 +103,7 @@ export default function MusicHeader() {
                         <button
                             onMouseDown={e => e.stopPropagation()}
                             onClick={() => signOut()}
+                            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                             className="p-1.5 rounded text-gray-500 hover:text-red-400 hover:bg-white/10 transition-colors"
                             title={t('Đăng xuất', 'Sign out', isVietnamese)}
                         >
@@ -102,6 +115,7 @@ export default function MusicHeader() {
                         onMouseDown={e => e.stopPropagation()}
                         onClick={handleLogin}
                         disabled={signingIn}
+                        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-xs font-medium rounded-lg transition-colors active:scale-95"
                     >
                         <LogIn className="w-3.5 h-3.5" />

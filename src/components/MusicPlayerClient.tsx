@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import {
     Music2, Heart, Bookmark, BookmarkCheck, Share2,
     Volume2, VolumeX, ChevronRight, Play, Pause, Menu, Plus, X, ListMusic, Shuffle,
-    Maximize2, Minimize2,
+    Maximize2, Minimize2, HardDrive,
 } from 'lucide-react';
 import { useTheme, useLanguage } from '@/contexts/AppContext';
 import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
@@ -960,7 +960,12 @@ function MusicSlide({
             <div className="absolute bottom-0 left-4 right-16 pb-10 z-10">
                 {hasTitle ? (
                     <>
-                        <p className="text-white font-bold text-lg leading-tight truncate drop-shadow">{track.title}</p>
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                            <p className="text-white font-bold text-lg leading-tight truncate drop-shadow">{track.title}</p>
+                            {(track.source === 'local' || track.audioUrl?.startsWith('asset:')) && (
+                                <HardDrive className="w-3.5 h-3.5 text-indigo-300/80 flex-shrink-0" aria-label="Local file" />
+                            )}
+                        </div>
                         {track.artist && <p className="text-white/65 text-sm mt-0.5 truncate">{track.artist}</p>}
                     </>
                 ) : (
@@ -1620,9 +1625,17 @@ export default function MusicPlayerClient() {
 
         const audio = audioRef.current;
 
+        // Use embed player only when the audioUrl is an embed-prefix (no real HTTP audio) OR it's a YouTube track.
+        // TikTok/Facebook imported tracks have tiktokId/facebookId set BUT also have a real R2 audioUrl.
+        // In that case we play the audio directly — TikTok embeds are blocked outside tiktok.com.
+        const hasRealAudioUrl = track.audioUrl.startsWith('http') || track.audioUrl.startsWith('asset:');
+        const useEmbedPath = track.youtubeId ||
+            (!hasRealAudioUrl && (track.tiktokId || track.facebookId)) ||
+            track.audioUrl.startsWith('yt:') || track.audioUrl.startsWith('tt:') ||
+            track.audioUrl.startsWith('fb:') || track.audioUrl.startsWith('fbreel:');
+
         // YouTube/TikTok/Facebook embed tracks: pause audio but keep the element alive
-        if (track.youtubeId || track.tiktokId || track.facebookId ||
-            track.audioUrl.startsWith('yt:') || track.audioUrl.startsWith('tt:') || track.audioUrl.startsWith('fb:') || track.audioUrl.startsWith('fbreel:')) {
+        if (useEmbedPath) {
             if (audio) { audio.pause(); audio.src = ''; }
             setCurrentTime(0);
             setDuration(track.durationSec || 0);
@@ -1642,7 +1655,11 @@ export default function MusicPlayerClient() {
             let url = track.audioUrl;
             let blobUrl: string | null = null;
 
-            const isImported = track.source === 'youtube' || track.source === 'tiktok';
+            // isImported: only true when the track has NO real HTTP audio URL
+            // (e.g. a track whose audioUrl is a "yt:"/"tt:" embed prefix with a persisted blob).
+            // For cloud R2 tracks (audioUrl starts with "https://"), hasRealAudioUrl=true so
+            // we skip the async IndexedDB lookup — that await can lose WKWebView autoplay context.
+            const isImported = !hasRealAudioUrl && (track.source === 'youtube' || track.source === 'tiktok');
 
             if (url.startsWith('local:')) {
                 const blob = await getAudioBlob(track.id);
@@ -1681,7 +1698,13 @@ export default function MusicPlayerClient() {
                     advanceToNext();
                 }
             };
-            audio.onerror = () => { if (!cancelled) advanceToNext(); };
+            audio.onerror = () => {
+                // Guard: skip if src is empty (not a real load error) or the element has no src
+                if (!audio.src || audio.src === window.location.href) return;
+                const code = audio.error?.code;
+                console.warn('[Audio] onerror code:', code, 'src:', audio.src.slice(0, 80));
+                if (!cancelled) advanceToNext();
+            };
             audio.onplaying = () => setAutoplayBlocked(false);
 
             // Swap source on the SAME element — WKWebView keeps autoplay permission
@@ -1693,38 +1716,38 @@ export default function MusicPlayerClient() {
             setDuration(0);
 
             if (isPlaying) {
-                const doPlay = () => {
-                    const isCrossfadeIn = crossfadeAdvanceRef.current;
-                    const targetVol = volume;
+                const isCrossfadeIn = crossfadeAdvanceRef.current;
+                const targetVol = volume;
 
-                    if (isCrossfadeIn) {
-                        audio.volume = 0;
-                        crossfadeAdvanceRef.current = false;
-                    }
+                if (isCrossfadeIn) {
+                    audio.volume = 0;
+                    crossfadeAdvanceRef.current = false;
+                }
 
-                    void audio.play()
-                        .then(() => {
-                            setAutoplayBlocked(false);
-                            if (isCrossfadeIn) {
-                                rampVolume(audio, 0, targetVol, CROSSFADE_S * 1000);
-                            }
-                        })
-                        .catch((err: unknown) => {
-                            const name = (err as { name?: string })?.name;
-                            if (name === 'NotAllowedError') setAutoplayBlocked(true);
-                        });
-                };
+                // Call play() directly — do NOT wrap in ctx.resume().then() because the
+                // async delay causes WKWebView to revoke autoplay permission on the element.
+                // The AudioContext is only needed for the visualizer, not for playback itself.
+                void audio.play()
+                    .then(() => {
+                        setAutoplayBlocked(false);
+                        if (isCrossfadeIn) {
+                            rampVolume(audio, 0, targetVol, CROSSFADE_S * 1000);
+                        }
+                    })
+                    .catch((err: unknown) => {
+                        const name = (err as { name?: string })?.name;
+                        if (name === 'NotAllowedError') setAutoplayBlocked(true);
+                    });
 
+                // Resume AudioContext separately so the visualizer can connect (non-blocking)
                 const ctx = getExistingAudioCtx();
                 if (ctx && ctx.state !== 'running') {
-                    ctx.resume().then(doPlay).catch(doPlay);
-                } else {
-                    doPlay();
+                    ctx.resume().catch(() => { });
                 }
             }
 
             // Cache current track blob for instant replay
-            if (!blobUrl && !url.startsWith('local:')) {
+            if (!blobUrl && !url.startsWith('local:') && !url.startsWith('asset:')) {
                 void (async () => {
                     try {
                         const res = await fetch(track.audioUrl);
@@ -1741,7 +1764,7 @@ export default function MusicPlayerClient() {
 
             // Pre-fetch next track blob
             const nextTrack = slides[activeIndex + 1];
-            if (nextTrack?.audioUrl && !nextTrack.audioUrl.startsWith('local:') && !getSessionBlob(nextTrack.id)) {
+            if (nextTrack?.audioUrl && !nextTrack.audioUrl.startsWith('local:') && !nextTrack.audioUrl.startsWith('asset:') && !getSessionBlob(nextTrack.id)) {
                 void (async () => {
                     try {
                         const res = await fetch(nextTrack.audioUrl);
@@ -1777,27 +1800,21 @@ export default function MusicPlayerClient() {
         if (audioRef.current) audioRef.current.volume = volume;
     }, [volume]);
 
-    // Sync play/pause. Awaits any pending AudioContext resume before calling
-    // audio.play() so the WebAudio graph is definitely live when audio starts.
+    // Sync play/pause. Call play() directly without waiting for AudioContext —
+    // ctx.resume().then() is async and WKWebView may revoke autoplay permission in that gap.
     useEffect(() => {
         const a = audioRef.current;
         if (!a) return;
         if (isPlaying) {
+            void a.play()
+                .then(() => setAutoplayBlocked(false))
+                .catch((err: unknown) => {
+                    const name = (err as { name?: string })?.name;
+                    if (name === 'NotAllowedError') setAutoplayBlocked(true);
+                });
+            // Resume ctx separately for the visualizer (non-blocking)
             const ctx = getExistingAudioCtx();
-            const doPlay = () => {
-                void a.play()
-                    .then(() => setAutoplayBlocked(false))
-                    .catch((err: unknown) => {
-                        const name = (err as { name?: string })?.name;
-                        if (name === 'NotAllowedError') setAutoplayBlocked(true);
-                    });
-            };
-            if (ctx && ctx.state !== 'running') {
-                // Context exists but is suspended — resume it first
-                ctx.resume().then(doPlay).catch(doPlay);
-            } else {
-                doPlay();
-            }
+            if (ctx && ctx.state !== 'running') ctx.resume().catch(() => { });
         } else {
             a.pause();
         }
@@ -2380,7 +2397,7 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopYtIframeRef}
-                        src={`https://www.youtube.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://localhost&referer=https://localhost`}
+                        src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : 'https://localhost'}&widget_referrer=${typeof window !== 'undefined' ? window.location.origin : 'https://localhost'}`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; encrypted-media; gyroscope; picture-in-picture"

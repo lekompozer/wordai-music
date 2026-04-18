@@ -28,10 +28,37 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<serde_json::Value, S
     }
 }
 
+#[tauri::command]
+fn read_audio_files_in_dir(dir_path: String) -> Result<Vec<serde_json::Value>, String> {
+    let audio_ext = ["mp3", "flac", "m4a", "wav", "ogg", "aac", "opus", "wma", "aiff"];
+    let path = std::path::Path::new(&dir_path);
+    if !path.is_dir() {
+        return Err("Not a directory".to_string());
+    }
+    let entries = std::fs::read_dir(path).map_err(|e| e.to_string())?;
+    let mut files: Vec<serde_json::Value> = entries
+        .flatten()
+        .filter_map(|e| {
+            let p = e.path();
+            if !p.is_file() { return None; }
+            let ext = p.extension()?.to_str()?.to_lowercase();
+            if !audio_ext.contains(&ext.as_str()) { return None; }
+            let name = p.file_name()?.to_str()?.to_string();
+            let full = p.to_str()?.to_string();
+            Some(serde_json::json!({ "path": full, "name": name }))
+        })
+        .collect();
+    files.sort_by(|a, b| {
+        a["name"].as_str().unwrap_or("").cmp(b["name"].as_str().unwrap_or(""))
+    });
+    Ok(files)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_log::Builder::default()
@@ -70,6 +97,7 @@ pub fn run() {
             get_app_build_info,
             check_for_updates,
             google_auth::open_google_auth,
+            read_audio_files_in_dir,
         ])
         .run(tauri::generate_context!())
         .expect("error while running WynAI Music");
