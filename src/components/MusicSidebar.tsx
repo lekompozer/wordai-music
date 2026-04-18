@@ -748,7 +748,13 @@ export default function MusicSidebar({
                 for (const t of localTracks) {
                     try {
                         const fileName = t.audioUrl.split('/').pop() || `${t.id}.mp3`;
-                        const r2Url = await uploadLocalAudioToR2(t.audioUrl, fileName);
+                        const r2Url = await uploadLocalAudioToR2(t.audioUrl, fileName, {
+                            title: t.title,
+                            artist: t.artist,
+                            durationSec: t.durationSec,
+                            coverUrl: t.thumbnailUrl,
+                            sourceTrackId: t.id,
+                        });
                         setPlaylists(prev => prev.map(p => p.id === pl.id
                             ? { ...p, tracks: p.tracks.map(tr => tr.id === t.id ? { ...tr, audioUrl: r2Url } : tr) }
                             : p));

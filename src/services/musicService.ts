@@ -84,21 +84,35 @@ export async function importYouTube(url: string): Promise<TrackMeta> {
  * @param fileName  original filename (e.g. "song.mp3")
  * @returns  Public R2 URL that other devices can stream
  */
-export async function uploadLocalAudioToR2(audioUrl: string, fileName: string): Promise<string> {
+export async function uploadLocalAudioToR2(
+    audioUrl: string,
+    fileName: string,
+    opts?: { title?: string; artist?: string; durationSec?: number; coverUrl?: string; sourceTrackId?: string }
+): Promise<string> {
     const token = await getToken();
 
-    // Fetch the local file blob via Tauri asset protocol
+    // Fetch the local file via Tauri asset:// protocol and convert to base64
     const res = await fetch(audioUrl);
     if (!res.ok) throw new Error(`Cannot read local file: ${fileName}`);
-    const blob = await res.blob();
-
-    const form = new FormData();
-    form.append('file', blob, fileName);
+    const arrayBuffer = await res.arrayBuffer();
+    const uint8 = new Uint8Array(arrayBuffer);
+    // btoa works for binary data up to ~20 MB
+    let binary = '';
+    for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+    const audio_base64 = btoa(binary);
 
     const uploadRes = await fetch(`${MUSIC_BASE}/upload-local`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            audio_base64,
+            filename: fileName,
+            title: opts?.title ?? fileName,
+            artist: opts?.artist ?? '',
+            duration_sec: opts?.durationSec ?? 0,
+            cover_url: opts?.coverUrl ?? '',
+            source_track_id: opts?.sourceTrackId ?? '',
+        }),
     });
 
     if (!uploadRes.ok) {
@@ -106,8 +120,8 @@ export async function uploadLocalAudioToR2(audioUrl: string, fileName: string): 
         throw new Error(err.detail || 'Upload failed');
     }
 
-    const data = await uploadRes.json() as { audio_url: string };
-    return data.audio_url;
+    const data = await uploadRes.json() as { public_url: string };
+    return data.public_url;
 }
 
 

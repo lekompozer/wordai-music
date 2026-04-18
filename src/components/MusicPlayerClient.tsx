@@ -2539,7 +2539,7 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopYtIframeRef}
-                        src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(ytEmbedOrigin)}&widget_referrer=${encodeURIComponent(ytEmbedOrigin)}`}
+                        src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
