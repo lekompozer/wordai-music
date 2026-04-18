@@ -57,8 +57,9 @@ fn read_audio_files_in_dir(dir_path: String) -> Result<Vec<serde_json::Value>, S
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        // Serve the app from http://localhost:14789 so YouTube embed API gets a valid HTTP origin
-        .plugin(tauri_plugin_localhost::Builder::new(14789).build())
+        // Serve the app from http://localhost:3001 so YouTube embed API gets the same HTTP origin
+        // as dev mode (localhost:3001). YouTube accepts this origin; asset:// and tauri:// are rejected.
+        .plugin(tauri_plugin_localhost::Builder::new(3001).build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -68,12 +69,20 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
+            // In production, tauri-plugin-localhost serves ../out/ via HTTP at port 3001.
+            // Using ExternalUrl makes window.location.origin = "http://localhost:3001"
+            // which is the same origin as dev mode — YouTube IFrame API accepts this.
+            #[cfg(not(dev))]
+            let webview_url = WebviewUrl::ExternalUrl(
+                "http://localhost:3001".parse().expect("invalid localhost url"),
+            );
+            #[cfg(dev)]
+            let webview_url = WebviewUrl::App("index.html".into());
+
             let builder = WebviewWindowBuilder::new(
                 app,
                 "main",
-                // Production: load local static files (next export output in ../out/)
-                // Dev: load from Next.js dev server (devUrl in tauri.conf.json)
-                WebviewUrl::App("index.html".into()),
+                webview_url,
             )
             .title("WynAI Music")
             .inner_size(1100.0, 780.0)

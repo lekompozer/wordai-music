@@ -1301,9 +1301,9 @@ export default function MusicPlayerClient() {
     // If window.location.origin is still 'tauri://localhost' (plugin not active or
     // serving via asset:// instead of HTTP), fall back to the known localhost plugin port.
     const ytEmbedOrigin = typeof window !== 'undefined'
-        ? (window.location.origin.startsWith('http') || window.location.origin.startsWith('asset') || window.location.origin.startsWith('tauri')
-            ? window.location.origin
-            : ((window as unknown as Record<string, unknown>).__TAURI_DESKTOP__ ? 'http://localhost:14789' : 'https://wynai.pro'))
+        ? (window.location.origin.startsWith('http')
+            ? window.location.origin  // http://localhost:3001 (prod via plugin) or dev
+            : ((window as unknown as Record<string, unknown>).__TAURI_DESKTOP__ ? 'http://localhost:3001' : 'https://wynai.pro'))
         : 'https://wynai.pro';
 
     // Shuffle (default: ON)
