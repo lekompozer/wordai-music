@@ -59,7 +59,7 @@ fn generate_pkce_pair() -> (String, String) {
 /// In production: https://wordai.pro
 fn get_frontend_base() -> String {
     std::env::var("DESKTOP_FRONTEND_URL")
-        .unwrap_or_else(|_| "https://music.wordai.pro".to_string())
+        .unwrap_or_else(|_| "tauri://localhost".to_string())
 }
 
 /// Open system browser + start local HTTP server to catch OAuth callback.

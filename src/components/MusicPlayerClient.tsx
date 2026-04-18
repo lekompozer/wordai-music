@@ -1411,7 +1411,7 @@ export default function MusicPlayerClient() {
                 // Scroll to top
                 setTimeout(() => {
                     feedRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-                    isSwitchingChannel.current = false;
+                    setTimeout(() => { isSwitchingChannel.current = false; }, 200);
                 }, 50);
                 setIsLoading(false);
             } else {
@@ -1498,7 +1498,7 @@ export default function MusicPlayerClient() {
         setIsPlaying(true);
         setTimeout(() => {
             feedRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-            isSwitchingChannel.current = false;
+            setTimeout(() => { isSwitchingChannel.current = false; }, 200);
         }, 80);
     }, [playlistOptions]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1515,14 +1515,23 @@ export default function MusicPlayerClient() {
         const container = feedRef.current;
         if (!container) return;
 
+        let ioDebounce: ReturnType<typeof setTimeout> | null = null;
         const observer = new IntersectionObserver(
             (entries) => {
                 if (isSwitchingChannel.current) return;
                 entries.forEach(entry => {
                     if (entry.isIntersecting && entry.intersectionRatio >= 0.55) {
                         const idx = slideRefs.current.indexOf(entry.target as HTMLDivElement);
-                        if (idx !== -1) {
-                            setActiveIndex(idx);
+                        if (idx !== -1 && idx !== activeIndexRef.current) {
+                            // Debounce to avoid rapid-fire index changes during scroll momentum
+                            if (ioDebounce) clearTimeout(ioDebounce);
+                            ioDebounce = setTimeout(() => {
+                                if (isSwitchingChannel.current) return;
+                                setActiveIndex(idx);
+                                setIsPlaying(true);
+                            }, 80);
+                        } else if (idx === activeIndexRef.current) {
+                            // Same index, just ensure playing
                             setIsPlaying(true); // Auto-play when swiping to a new track
                             // Load more near end
                             if (idx >= slideRefs.current.length - LOAD_MORE_THRESHOLD) {
@@ -1562,7 +1571,7 @@ export default function MusicPlayerClient() {
 
         const els = slideRefs.current;
         els.forEach(el => { if (el) observer.observe(el); });
-        return () => observer.disconnect();
+        return () => { observer.disconnect(); if (ioDebounce) clearTimeout(ioDebounce); };
     }, [slides, loadAndBuildSlides]);
 
     // ── Audio management (desktop) ────────────────────────────────────────────
@@ -2216,7 +2225,8 @@ export default function MusicPlayerClient() {
         setIsMenuOpen(false);
         setTimeout(() => {
             feedRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-            isSwitchingChannel.current = false;
+            // Longer delay to let IO settle after slide array swap + scroll
+            setTimeout(() => { isSwitchingChannel.current = false; }, 200);
         }, 80);
     }, [isShuffle, stopIframeMedia]);
 
@@ -2367,7 +2377,7 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopYtIframeRef}
-                        src={`https://www.youtube.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : 'https://tauri.localhost'}`}
+                        src={`https://www.youtube.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&widget_referrer=${typeof window !== 'undefined' ? window.location.origin : ''}`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
