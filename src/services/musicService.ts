@@ -77,8 +77,40 @@ export async function importYouTube(url: string): Promise<TrackMeta> {
 }
 
 /**
- * Import TikTok URL → MP3 (always downloads, no cache).
+ * Upload a local audio file to R2 via the backend.
+ * Used when publishing a playlist that contains local files so other devices can stream them.
+ *
+ * @param audioUrl  asset:// URL of the local file (used to fetch the blob in Tauri)
+ * @param fileName  original filename (e.g. "song.mp3")
+ * @returns  Public R2 URL that other devices can stream
  */
+export async function uploadLocalAudioToR2(audioUrl: string, fileName: string): Promise<string> {
+    const token = await getToken();
+
+    // Fetch the local file blob via Tauri asset protocol
+    const res = await fetch(audioUrl);
+    if (!res.ok) throw new Error(`Cannot read local file: ${fileName}`);
+    const blob = await res.blob();
+
+    const form = new FormData();
+    form.append('file', blob, fileName);
+
+    const uploadRes = await fetch(`${MUSIC_BASE}/upload-local`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+    });
+
+    if (!uploadRes.ok) {
+        const err = await uploadRes.json().catch(() => ({})) as { detail?: string };
+        throw new Error(err.detail || 'Upload failed');
+    }
+
+    const data = await uploadRes.json() as { audio_url: string };
+    return data.audio_url;
+}
+
+
 export async function importTikTok(url: string): Promise<TrackMeta> {
     const token = await getToken();
     const res = await fetch(`${MUSIC_BASE}/import-tiktok`, {

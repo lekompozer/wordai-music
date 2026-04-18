@@ -8,3 +8,14 @@ body {
     overflow: hidden;
     /* Music player is fullscreen — no page scroll */
 }
+
+/* Fix: WKWebView (Safari) may override input text color with system default,
+   making typed text invisible in dark-mode inputs.
+   -webkit-text-fill-color takes precedence over 'color' in WebKit, so
+   setting it to 'inherit' restores the CSS color set via Tailwind text-* classes. */
+input,
+textarea,
+select {
+    -webkit-text-fill-color: inherit;
+    color: inherit;
+}

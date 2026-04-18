@@ -91,6 +91,8 @@ pub fn run() {
                  window.__WORDAI_ERRORS__ = []; \
                  console.log('[WynAI Music] v0.1.0 desktop runtime active');"
             )
+            // Enable DevTools in all builds for debugging
+            .devtools(true)
             .build()?;
 
             Ok(())

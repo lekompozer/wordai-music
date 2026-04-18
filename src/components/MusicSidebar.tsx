@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import {
     searchYouTube, importYouTube, importTikTok,
-    trackMetaToPlaylist,
+    trackMetaToPlaylist, uploadLocalAudioToR2,
     type YTSearchResult, type PlaylistTrack,
 } from '@/services/musicService';
 import {
@@ -737,6 +737,27 @@ export default function MusicSidebar({
         setPublishingId(pl.id);
         setPublishModalOpen(false);
         try {
+            // ── Upload local files to R2 before publishing ──────────────────
+            // Tracks with asset:// URLs can only be played on this device.
+            // Upload them to R2 so other devices can stream them.
+            const localTracks = playlists
+                .find(p => p.id === pl.id)?.tracks
+                .filter(t => t.audioUrl?.startsWith('asset://')) ?? [];
+
+            if (localTracks.length > 0) {
+                for (const t of localTracks) {
+                    try {
+                        const fileName = t.audioUrl.split('/').pop() || `${t.id}.mp3`;
+                        const r2Url = await uploadLocalAudioToR2(t.audioUrl, fileName);
+                        setPlaylists(prev => prev.map(p => p.id === pl.id
+                            ? { ...p, tracks: p.tracks.map(tr => tr.id === t.id ? { ...tr, audioUrl: r2Url } : tr) }
+                            : p));
+                    } catch {
+                        // Skip track if upload fails — publish continues with other tracks
+                    }
+                }
+            }
+
             if (isPublished) {
                 await updateChannelMetadata(pl.id, publishMeta);
                 setPublicChannels(prev => prev.map(c => c.id === pl.id

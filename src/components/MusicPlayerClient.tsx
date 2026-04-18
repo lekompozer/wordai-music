@@ -27,7 +27,6 @@ function t(vi: string, en: string, isVietnamese: boolean) {
 
 const MUSIC_CHANNELS = [
     { slug: 'background-music', name: 'Background Music', label: 'm/background-music', accent: '#4f46e5' },
-    { slug: 'nhac-hot-tiktok', name: 'Nhạc Hot TikTok', label: 'm/nhac-hot-tiktok', accent: '#2563eb' },
     { slug: 'nhacviet-tiktok', name: 'Nhạc Việt', label: 'm/nhacviet-tiktok', accent: '#0f766e' },
     { slug: 'rap-tiktok', name: 'Rap TikTok', label: 'm/rap-tiktok', accent: '#7c3aed' },
     { slug: 'nhac-soi-dong', name: 'Nhạc Sôi Động', label: 'm/nhac-soi-dong', accent: '#1d4ed8' },
@@ -1297,10 +1296,14 @@ export default function MusicPlayerClient() {
     // Download progress for current track (0-100 while downloading, null otherwise)
     const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
-    // YouTube embed origin — http://localhost:14789 when running in Tauri (plugin-localhost),
-    // real origin on web, fallback to wordai.pro for safety.
+    // YouTube embed origin: must be a valid HTTP origin for YouTube's embed API.
+    // tauri-plugin-localhost serves the production app at http://localhost:14789.
+    // If window.location.origin is still 'tauri://localhost' (plugin not active or
+    // serving via asset:// instead of HTTP), fall back to the known localhost plugin port.
     const ytEmbedOrigin = typeof window !== 'undefined'
-        ? (window.location.origin.startsWith('http') ? window.location.origin : 'http://localhost')
+        ? (window.location.origin.startsWith('http')
+            ? window.location.origin
+            : ((window as unknown as Record<string, unknown>).__TAURI_DESKTOP__ ? 'http://localhost:14789' : 'https://wynai.pro'))
         : 'https://wynai.pro';
 
     // Shuffle (default: ON)
