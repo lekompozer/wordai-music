@@ -270,7 +270,9 @@ jobs:
         run: |
           VERSION=$(node -e "const c=require('./src-tauri/tauri.conf.json'); console.log(c.version)")
           PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          CDN="${NEXT_PUBLIC_R2_PUBLIC_URL}/desktop-music"
+          # Fallback to known R2 public URL if secret not set
+          R2_BASE="${NEXT_PUBLIC_R2_PUBLIC_URL:-https://pub-9e0c13107bce4befa1b3def86de29eb0.r2.dev}"
+          CDN="${R2_BASE}/desktop-music"
           cat > /tmp/latest.json <<EOF
           {
             "version": "${VERSION}",
