@@ -96,7 +96,7 @@ function fmtDur(sec: number): string {
 
 // ─── Tab type ─────────────────────────────────────────────────────────────────
 
-type Tab = 'shorts' | 'channels' | 'search' | 'import' | 'playlists' | 'local';
+type Tab = 'channels' | 'search' | 'import' | 'playlists' | 'local';
 
 // ─── Sub-component: ChannelTrackList ─────────────────────────────────────────
 
@@ -238,6 +238,7 @@ export default function MusicSidebar({
     const { user } = useWordaiAuth();
     const [mounted, setMounted] = useState(false);
     const [isMobileViewport, setIsMobileViewport] = useState(false);
+    const [shortsOpen, setShortsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<Tab>(() => {
         if (typeof window === 'undefined') return 'channels';
         try {
@@ -447,7 +448,7 @@ export default function MusicSidebar({
 
     // Load Music Shorts when Shorts tab is active
     useEffect(() => {
-        if (activeTab !== 'shorts') return;
+        if (!shortsOpen) return;
         setShortsLoading(true);
         const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://ai.wordai.pro';
         fetch(`${API_BASE}/api/v1/trending/music?lang=${shortsLang}&limit=40&offset=0`)
@@ -455,7 +456,7 @@ export default function MusicSidebar({
             .then(d => setShortsItems(d.items ?? []))
             .catch(() => setShortsItems([]))
             .finally(() => setShortsLoading(false));
-    }, [activeTab, shortsLang]);
+    }, [shortsOpen, shortsLang]);
 
     // Load local playlists from localStorage on mount and migrate multiple into one
     useEffect(() => {
@@ -2148,12 +2149,11 @@ export default function MusicSidebar({
     // ── Tab bar ───────────────────────────────────────────────────────────────
 
     const tabs: { id: Tab; label: string; labelVi: string; icon: React.ReactNode }[] = [
-        { id: 'shorts', label: 'Shorts', labelVi: 'Shorts', icon: <PlayCircle className="w-3.5 h-3.5" /> },
-        { id: 'channels', label: 'Chs', labelVi: 'Kênh', icon: <AudioWaveform className="w-3.5 h-3.5" /> },
+        { id: 'local', label: 'Local', labelVi: 'Local', icon: <HardDrive className="w-3.5 h-3.5" /> },
+        { id: 'playlists', label: 'Playlist', labelVi: 'Playlist', icon: <ListMusic className="w-3.5 h-3.5" /> },
+        { id: 'channels', label: 'Channel', labelVi: 'Kênh', icon: <AudioWaveform className="w-3.5 h-3.5" /> },
         { id: 'search', label: 'Search', labelVi: 'Tìm', icon: <Youtube className="w-3.5 h-3.5" /> },
         { id: 'import', label: 'Import', labelVi: 'Import', icon: <LinkIcon className="w-3.5 h-3.5" /> },
-        { id: 'playlists', label: 'Lists', labelVi: 'PL', icon: <ListMusic className="w-3.5 h-3.5" /> },
-        { id: 'local', label: 'Local', labelVi: 'Local', icon: <HardDrive className="w-3.5 h-3.5" /> },
     ];
 
     const sidebarContent = (
@@ -2190,13 +2190,28 @@ export default function MusicSidebar({
                     </button>
                 </div>
 
+                {/* Shorts button — wide, above tabs */}
+                <div className="mx-3 mt-3 flex-shrink-0">
+                    <button
+                        onClick={() => setShortsOpen(v => !v)}
+                        className={`w-full flex items-center justify-center gap-2 rounded-[18px] py-2 text-[11px] font-semibold transition-all ${shortsOpen
+                                ? 'text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]'
+                                : (effectiveDark ? 'text-slate-300 hover:text-white hover:bg-white/[0.06]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80')
+                            }`}
+                        style={shortsOpen ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' } : { border: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}` }}
+                    >
+                        <PlayCircle className="w-3.5 h-3.5" />
+                        {isVietnamese ? '▶ Shorts / Trending' : '▶ Shorts / Trending'}
+                    </button>
+                </div>
+
                 {/* Tab bar */}
-                <div className={`mx-3 mt-3 flex-shrink-0 grid grid-cols-6 gap-1 rounded-[22px] border p-1 ${border} ${elevatedSurface}`}>
+                <div className={`mx-3 mt-2 flex-shrink-0 grid grid-cols-5 gap-1 rounded-[22px] border p-1 ${border} ${elevatedSurface}`}>
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex flex-col items-center gap-1 rounded-[18px] py-2.5 text-[9px] font-semibold transition-all ${activeTab === tab.id
+                            onClick={() => { setActiveTab(tab.id); setShortsOpen(false); }}
+                            className={`flex flex-col items-center gap-1 rounded-[18px] py-2.5 text-[9px] font-semibold transition-all ${activeTab === tab.id && !shortsOpen
                                 ? 'text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]'
                                 : `${textSec} ${effectiveDark ? 'hover:text-white hover:bg-white/[0.06]' : 'hover:text-slate-700 hover:bg-slate-100/80'}`
                                 }`}
@@ -2210,12 +2225,12 @@ export default function MusicSidebar({
 
                 {/* Tab content */}
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden pt-3">
-                    {activeTab === 'shorts' && renderShortsTab()}
-                    {activeTab === 'channels' && renderChannelsTab()}
-                    {activeTab === 'search' && renderSearchTab()}
-                    {activeTab === 'import' && renderImportTab()}
-                    {activeTab === 'playlists' && renderPlaylistsTab()}
-                    {activeTab === 'local' && renderLocalTab()}
+                    {shortsOpen && renderShortsTab()}
+                    {!shortsOpen && activeTab === 'channels' && renderChannelsTab()}
+                    {!shortsOpen && activeTab === 'search' && renderSearchTab()}
+                    {!shortsOpen && activeTab === 'import' && renderImportTab()}
+                    {!shortsOpen && activeTab === 'playlists' && renderPlaylistsTab()}
+                    {!shortsOpen && activeTab === 'local' && renderLocalTab()}
                 </div>
             </div>
 

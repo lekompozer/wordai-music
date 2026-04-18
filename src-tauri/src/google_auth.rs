@@ -55,11 +55,14 @@ fn generate_pkce_pair() -> (String, String) {
 }
 
 /// Get the frontend base URL.
-/// In dev mode: $DESKTOP_FRONTEND_URL (e.g. http://localhost:3000)
-/// In production: https://wordai.pro
+/// In dev mode: $DESKTOP_FRONTEND_URL (e.g. http://localhost:3001)
+/// In production: http://localhost:3001 (tauri-plugin-localhost serves the app at this port)
+/// IMPORTANT: Must match the port used in tauri_plugin_localhost::Builder::new(3001)
+/// so that after OAuth navigation, window.location.origin stays http://localhost:3001
+/// (the origin YouTube IFrame API accepts).
 fn get_frontend_base() -> String {
     std::env::var("DESKTOP_FRONTEND_URL")
-        .unwrap_or_else(|_| "tauri://localhost".to_string())
+        .unwrap_or_else(|_| "http://localhost:3001".to_string())
 }
 
 /// Open system browser + start local HTTP server to catch OAuth callback.

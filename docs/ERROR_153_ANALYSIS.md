@@ -149,134 +149,85 @@ Nếu `window.location.origin = 'asset://localhost'` (không phải http), fallb
 
 ---
 
-## 4. Root Cause Analysis
+## 4. Root Cause Analysis — ĐÃ XÁC ĐỊNH CHÍNH XÁC
 
 ```
-Production Tauri app
+Production Tauri app (TRƯỚC FIX)
     ↓
-WKWebView load asset:// protocol (static files từ out/ folder)
+WebviewUrl::App("index.html") → WKWebView load via asset:// protocol
     ↓
-window.location.origin = 'asset://localhost' (không phải http)
+window.location.origin = 'asset://localhost'
     ↓
-ytEmbedOrigin = 'http://localhost:14789' (fallback)
+ytEmbedOrigin = fallback về 'http://localhost:14789' hoặc 'https://wynai.pro'
     ↓
-YouTube embed URL: ?origin=http%3A%2F%2Flocalhost%3A14789
+YouTube REJECT origin (không phải http://localhost:3001)
     ↓
-YouTube server: origin không hợp lệ hoặc video restricted
+Error 153 / video không play, onError bị im lặng → màn đen 10 phút
+
+Dev Mode (LUÔN HOẠT ĐỘNG)
     ↓
-YouTube gửi postMessage: { event: 'onError', data: 153 }
+devUrl = "http://localhost:3001" → WKWebView load trực tiếp từ Next.js dev server
     ↓
-Code hiện tại: KHÔNG CÓ handler cho onError → im lặng
+window.location.origin = 'http://localhost:3001'
     ↓
-User thấy màn hình đen, không có feedback
-    ↓
-Sau 600 giây (10 phút) fallback timer trigger → skip sang track tiếp
+YouTube ACCEPT origin → play bình thường
 ```
+
+**Điểm mấu chốt**: YouTube đã whitelist `http://localhost:3001` nhưng KHÔNG whitelist `http://localhost:14789` hay `asset://localhost`. `tauri-plugin-localhost` đã được đăng ký nhưng webview vẫn dùng `asset://` protocol vì `WebviewUrl::App("index.html")` — plugin chạy nhưng không ai dùng!
 
 ---
 
-## 5. Fix Plan (Theo thứ tự ưu tiên)
+## 5. Fix đã áp dụng
 
-### Fix 1 — Xử lý `onError` postMessage (ĐÃ HOÀN THÀNH)
+### Fix 1 — Xử lý `onError` postMessage ✅ (commit `3673ab8`)
 
-Trong `onMsg` handler, đã cập nhật block catch `onError` event từ iframe `youtube-nocookie.com`:
-
-```ts
-                // Handle YouTube Errors
-                if (data?.event === 'onError') {
-                    const errorCode = data?.info ?? data?.data;
-                    console.warn(`[YouTube Error] ${errorCode} | videoId: ${activeSlideYoutubeId}`);
-                    // YouTube error codes: 2 (invalid param), 5 (HTML5 error), 100 (not found/deleted)
-                    // 101/150 (owner restricted embed), 153 (undocumented server block)
-                    if ([2, 5, 100, 101, 150, 153].includes(Number(errorCode))) {
-                        triggerEnd(); // Skip to next track immediately
-                    }
-                    return;
-                }
-```
-
-Nhờ đó, user không còn gặp tình trạng màn hình đen 10 phút. Ngay khi YouTube server chối từ (mã 150, 153,...), track sẽ được tự động bỏ qua sang bài kế tiếp.
-
-### Fix 2 — Sửa lại ytEmbedOrigin để match origin thực (ĐÃ HOÀN THÀNH)
-Đã cho phép `asset://` và `tauri://` origins được truyền thẳng qua URL `origin=` của iframe thay vì ép về localhost port `14789`. Điều này tránh mismatch origin message từ phía YouTube.
-
-        // ... code cũ
-    } catch { }
-};
-```
-
-**Tác dụng**: Video bị block sẽ auto-skip ngay lập tức thay vì chờ 10 phút.
-
-### Fix 2 — Sửa `ytEmbedOrigin` cho Tauri asset:// protocol
+Trong `onMsg` handler, thêm xử lý `onError` event:
 
 ```ts
-// THAY THẾ logic hiện tại:
-const ytEmbedOrigin = (() => {
-    if (typeof window === 'undefined') return 'https://wynai.pro';
-    const origin = window.location.origin;
-    if (origin.startsWith('http')) return origin;
-    // asset:// hoặc tauri:// → dùng production URL thay vì localhost
-    // YouTube chấp nhận https://wynai.pro nếu video embed được
-    return 'https://wynai.pro';
-})();
-```
-
-**Lý do**: `https://wynai.pro` là domain production, nhiều video embed được cho phép với domain này. `http://localhost:14789` thường bị YouTube reject.
-
-### Fix 3 — Thêm user-facing error UI (UX improvement)
-
-Thêm state và hiển thị thông báo khi YouTube error:
-
-```ts
-const [ytError, setYtError] = useState<{ code: number; trackId: string } | null>(null);
-
-// Trong onMsg:
 if (data?.event === 'onError') {
-    setYtError({ code: data.data, trackId: activeSlideYoutubeId ?? '' });
-    triggerEnd();
+    const errorCode = data?.info ?? data?.data;
+    console.warn(`[YouTube Error] ${errorCode} | videoId: ${activeSlideYoutubeId}`);
+    if ([2, 5, 100, 101, 150, 153].includes(Number(errorCode))) {
+        triggerEnd(); // Skip sang track tiếp theo ngay lập tức
+    }
+    return;
 }
-
-// Trong JSX, overlay trên iframe:
-{ytError?.trackId === activeSlide?.youtubeId && (
-    <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/70 text-white gap-3">
-        <AlertCircle className="w-8 h-8 text-red-400" />
-        <p className="text-sm text-center px-4">
-            Video này không thể phát trong ứng dụng<br/>
-            <span className="text-white/50 text-xs">(Error {ytError.code})</span>
-        </p>
-        <button onClick={advanceToNext} className="px-4 py-2 bg-white/10 rounded-full text-sm hover:bg-white/20">
-            Bài tiếp theo →
-        </button>
-    </div>
-)}
 ```
 
-### Fix 4 — Giảm fallback timer khi `durationSec = 0`
+Kết quả: Video bị block auto-skip ngay, không còn chờ 10 phút nữa.
 
-```ts
-// TRƯỚC: fallbackSec = 600 (10 phút) khi duration = 0
-const fallbackSec = ytDuration > 10 ? ytDuration + 5 : 600;
+### Fix 2 — Dùng `http://localhost:3001` trên production ✅ (commit `18eba77`)
 
-// SAU: chỉ 30 giây nếu không có duration
-const fallbackSec = ytDuration > 10 ? ytDuration + 5 : 30;
+**Root fix thực sự**: Thay đổi `src-tauri/src/lib.rs` để production load webview qua HTTP server (port 3001) thay vì `asset://`:
+
+```rust
+// tauri-plugin-localhost serve out/ tại port 3001 (CÙNG port với dev mode)
+.plugin(tauri_plugin_localhost::Builder::new(3001).build())
+
+// Production: load qua HTTP → window.location.origin = "http://localhost:3001"
+#[cfg(not(dev))]
+let webview_url = WebviewUrl::External(
+    "http://localhost:3001".parse().expect("invalid localhost url"),
+);
+// Dev: vẫn dùng devUrl từ tauri.conf.json (http://localhost:3001)
+#[cfg(dev)]
+let webview_url = WebviewUrl::App("index.html".into());
 ```
+
+`ytEmbedOrigin` trong `MusicPlayerClient.tsx` giờ luôn nhận `http://localhost:3001` (cả dev lẫn production) → YouTube chấp nhận → video play bình thường.
 
 ---
 
-## 6. Files cần sửa
+## 6. Trạng thái hiện tại ✅ RESOLVED
 
-| File | Thay đổi |
-|------|----------|
-| `src/components/MusicPlayerClient.tsx` (wordai-music) | Fix 1 + Fix 2 + Fix 3 + Fix 4 |
-| `src/app/listen-learn/music/MusicPlayerClient.tsx` (wordai) | Sync tất cả fix trên |
+| Vấn đề | Trước | Sau |
+|--------|-------|-----|
+| Video Error 153 | Màn đen 10 phút | Auto-skip ngay lập tức |
+| YouTube reject origin | `asset://localhost` → bị block | `http://localhost:3001` → được chấp nhận |
+| Dev vs Production | Dev OK, Production broken | Cả hai dùng cùng origin `http://localhost:3001` |
 
----
+## 7. Bài học rút ra
 
-## 7. Tóm tắt nhanh
-
-| Vấn đề | Hiện trạng | Fix |
-|--------|-----------|-----|
-| Video blocked → Error 153 | Không bắt được, chờ 10 phút | Xử lý `onError` → skip ngay |
-| `ytEmbedOrigin` sai trên Tauri | `localhost:14789` → YouTube reject | Dùng `https://wynai.pro` |
-| User không biết lỗi gì | Màn đen im lặng | Hiện error overlay + nút skip |
-| Fallback quá lâu (10 phút) | `durationSec=0` → 600s | Giảm xuống 30s |
+- `tauri-plugin-localhost` phải được dùng kết hợp với `WebviewUrl::External("http://localhost:PORT")` — chỉ đăng ký plugin mà không đổi `WebviewUrl` thì plugin vô nghĩa.
+- Khi debug vấn đề "dev OK nhưng production broken", luôn kiểm tra `window.location.origin` — dev và production có thể serve từ protocol khác nhau.
+- Port phải khớp với port YouTube đã whitelist (`3001`) — không tự chọn port random như `14789`.

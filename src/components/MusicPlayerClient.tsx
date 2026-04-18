@@ -2150,7 +2150,7 @@ export default function MusicPlayerClient() {
         };
         window.addEventListener('message', onMsg);
 
-        const fallbackSec = ytDuration > 10 ? ytDuration + 5 : 600;
+        const fallbackSec = ytDuration > 10 ? ytDuration + 5 : 30; // 30s fallback when duration unknown (was 600s)
         const fallbackTimer = setTimeout(triggerEnd, fallbackSec * 1000);
         const pingInterval = setInterval(() => {
             try {
