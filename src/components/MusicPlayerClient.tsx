@@ -1588,7 +1588,7 @@ export default function MusicPlayerClient() {
         if (!audioRef.current) {
             const a = new Audio();
             a.preload = 'auto';
-            a.crossOrigin = 'anonymous';
+            // Do NOT set crossOrigin="anonymous" to avoid CORS failures on CDN MP3s
             audioRef.current = a;
             setAudioEl(a);
         }
@@ -2377,7 +2377,7 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopYtIframeRef}
-                        src={`https://www.youtube.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&widget_referrer=${typeof window !== 'undefined' ? window.location.origin : ''}`}
+                        src={`https://www.youtube.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://www.wynai.pro`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
