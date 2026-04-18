@@ -1655,17 +1655,12 @@ export default function MusicPlayerClient() {
             let url = track.audioUrl;
             let blobUrl: string | null = null;
 
-            // isImported: only true when the track has NO real HTTP audio URL
-            // (e.g. a track whose audioUrl is a "yt:"/"tt:" embed prefix with a persisted blob).
-            // For cloud R2 tracks (audioUrl starts with "https://"), hasRealAudioUrl=true so
-            // we skip the async IndexedDB lookup — that await can lose WKWebView autoplay context.
-            const isImported = !hasRealAudioUrl && (track.source === 'youtube' || track.source === 'tiktok');
-
+            // Caching: check local DB, then session, if missing trigger background download
             if (url.startsWith('local:')) {
                 const blob = await getAudioBlob(track.id);
                 if (!blob || cancelled) return;
                 blobUrl = URL.createObjectURL(blob);
-            } else if (isImported) {
+            } else {
                 const persistedBlob = await getAudioBlob(track.id);
                 if (persistedBlob) {
                     blobUrl = URL.createObjectURL(persistedBlob);
@@ -1673,12 +1668,15 @@ export default function MusicPlayerClient() {
                     const sessionBlob = getSessionBlob(track.id);
                     if (sessionBlob) {
                         blobUrl = URL.createObjectURL(sessionBlob);
+                    } else if (hasRealAudioUrl && url.startsWith('http')) {
+                        // Trigger background download to local DB for next listen
+                        void fetch(url).then(res => res.ok ? res.blob() : null).then(blob => {
+                            if (blob) {
+                                void cacheAudioBlob(track.id, blob);
+                                setSessionBlob(track.id, blob);
+                            }
+                        }).catch(() => null);
                     }
-                }
-            } else {
-                const sessionBlob = getSessionBlob(track.id);
-                if (sessionBlob) {
-                    blobUrl = URL.createObjectURL(sessionBlob);
                 }
             }
 
@@ -1755,25 +1753,32 @@ export default function MusicPlayerClient() {
                             const blob = await res.blob();
                             if (!cancelled) {
                                 setSessionBlob(track.id, blob);
-                                if (isImported) void cacheAudioBlob(track.id, blob);
+                                void cacheAudioBlob(track.id, blob);
                             }
                         }
                     } catch { /* ignore */ }
                 })();
             }
 
-            // Pre-fetch next track blob
-            const nextTrack = slides[activeIndex + 1];
-            if (nextTrack?.audioUrl && !nextTrack.audioUrl.startsWith('local:') && !nextTrack.audioUrl.startsWith('asset:') && !getSessionBlob(nextTrack.id)) {
+            // Pre-fetch next track blob (+ 2 tracks ahead) and save to IndexedDB
+            const tracksToPreFetch = [slides[activeIndex + 1], slides[activeIndex + 2]].filter(Boolean);
+            for (const nextTrack of tracksToPreFetch) {
+                if (!nextTrack?.audioUrl) continue;
+                const nextUrl = nextTrack.audioUrl;
+                if (nextUrl.startsWith('local:') || nextUrl.startsWith('asset:') || nextUrl.startsWith('yt:') || nextUrl.startsWith('tt:') || nextUrl.startsWith('fb:') || nextUrl.startsWith('fbreel:')) continue;
+                if (getSessionBlob(nextTrack.id)) continue;
                 void (async () => {
+                    // Check IndexedDB first — avoid redundant fetch
+                    const existing = await getAudioBlob(nextTrack.id);
+                    if (existing) { setSessionBlob(nextTrack.id, existing); return; }
+                    if (cancelled) return;
                     try {
-                        const res = await fetch(nextTrack.audioUrl);
+                        const res = await fetch(nextUrl);
                         if (res.ok && !cancelled) {
                             const blob = await res.blob();
                             if (!cancelled) {
                                 setSessionBlob(nextTrack.id, blob);
-                                const nextIsImported = nextTrack.source === 'youtube' || nextTrack.source === 'tiktok';
-                                if (nextIsImported) void cacheAudioBlob(nextTrack.id, blob);
+                                void cacheAudioBlob(nextTrack.id, blob);
                             }
                         }
                     } catch { /* ignore */ }
@@ -2134,6 +2139,15 @@ export default function MusicPlayerClient() {
     const handleSelectChannel = useCallback((slug: ChannelSlug) => {
         if (slug === selectedChannel) return;
 
+        // Unlock audio contexts synchronously to satisfy Safari/WKWebView gesture requirements
+        // BEFORE any async fetching or state batching drops the user interaction token.
+        if (audioRef.current) {
+            if (!audioRef.current.src) {
+                audioRef.current.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+            }
+            audioRef.current.play().catch(() => null);
+        }
+
         stopIframeMedia();
         setSelectedChannel(slug);
         setCurrentTime(0);
@@ -2200,6 +2214,16 @@ export default function MusicPlayerClient() {
     void _activeChannelMeta; // used by future code
 
     const handlePlayTracks = useCallback((tracks: SidebarTrack[], startIndex = 0, playlistId?: string, playlistName?: string) => {
+        // Unlock audio context synchronously immediately on click
+        if (tracks.length > 0 && tracks[startIndex]?.source !== 'youtube' && tracks[startIndex]?.source !== 'facebook') {
+            if (audioRef.current) {
+                if (!audioRef.current.src) {
+                    audioRef.current.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+                }
+                audioRef.current.play().catch(() => null);
+            }
+        }
+
         let actualTracks = tracks;
         if (startIndex > 0 && startIndex < tracks.length) {
             actualTracks = [...tracks.slice(startIndex), ...tracks.slice(0, startIndex)];
@@ -2397,12 +2421,12 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopYtIframeRef}
-                        src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : 'https://localhost'}&widget_referrer=${typeof window !== 'undefined' ? window.location.origin : 'https://localhost'}`}
+                        src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://wordai.pro&widget_referrer=https://wordai.pro`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
-                        referrerPolicy="no-referrer"
+                        referrerPolicy="strict-origin-when-cross-origin"
                         onLoad={(e) => {
                             try {
                                 const win = e.currentTarget.contentWindow;
