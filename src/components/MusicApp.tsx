@@ -7,7 +7,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import MusicHeader from './MusicHeader';
+
+// Pre-load both players dynamically — avoids webpack code-split chunks that
+// WKWebView can fail to fetch ("Load failed" TypeError in dev mode).
+const MusicPlayerClient = dynamic(() => import('./MusicPlayerClient'), { ssr: false });
+const MusicPlayerMobile = dynamic(() => import('./MusicPlayerMobile'), { ssr: false });
 
 // Detect mobile vs desktop to route to correct player
 function detectMobile(): boolean {
@@ -26,10 +32,7 @@ export default function MusicApp() {
 
     if (isMobile === null) return null;
 
-    // Dynamic import to avoid SSR issues
-    const PlayerComponent = isMobile
-        ? require('./MusicPlayerMobile').default
-        : require('./MusicPlayerClient').default;
+    const PlayerComponent = isMobile ? MusicPlayerMobile : MusicPlayerClient;
 
     return (
         <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#06060f]">

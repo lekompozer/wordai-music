@@ -80,7 +80,9 @@ export async function pickAudioFiles(): Promise<LocalTrack[]> {
     const { open } = await import('@tauri-apps/plugin-dialog');
     const result = await open({
         multiple: true,
-        filters: [{ name: 'Audio', extensions: ['mp3', 'flac', 'm4a', 'wav', 'ogg', 'aac', 'opus', 'wma', 'aiff'] }],
+        filters: [
+            { name: 'Audio & Video', extensions: ['mp3', 'flac', 'm4a', 'wav', 'ogg', 'aac', 'opus', 'wma', 'aiff', 'mp4', 'mov', 'webm', 'mkv', 'm4v'] },
+        ],
     });
     if (!result) return [];
     const paths = Array.isArray(result) ? result : [result];

@@ -10,7 +10,8 @@ import {
 import { useTheme, useLanguage } from '@/contexts/AppContext';
 import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
 import MusicSidebar, { type SidebarTrack } from './MusicSidebar';
-import YoutubeShortsFeedClient from './YoutubeShortsFeedClient';
+import dynamic from 'next/dynamic';
+const YoutubeShortsFeedClient = dynamic(() => import('./YoutubeShortsFeedClient'), { ssr: false });
 import { getAudioBlob, getSessionBlob, setSessionBlob, cacheAudioBlob } from '@/lib/audioCache';
 import { recordTrackPlay } from '@/services/musicService';
 import {
@@ -2472,18 +2473,16 @@ export default function MusicPlayerClient() {
             />
 
             {subTab === 'shorts' && (
-                <div className="h-full flex lg:pl-[320px]">
-                    <div className="flex-1 overflow-hidden relative z-[50] bg-[#06060f]">
-                        {/* Back button */}
-                        <button
-                            onClick={() => setSubTab('library')}
-                            className="absolute top-4 right-4 z-[60] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white/80 text-xs font-medium hover:bg-white/10 transition-colors"
-                            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-                        >
-                            ✕ {isVietnamese ? 'Đóng' : 'Close'}
-                        </button>
-                        <YoutubeShortsFeedClient />
-                    </div>
+                <div className="fixed inset-0 z-[200] bg-[#06060f]" style={{ left: 320 }}>
+                    {/* Back button */}
+                    <button
+                        onClick={() => setSubTab('library')}
+                        className="absolute top-4 right-4 z-[60] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white/80 text-xs font-medium hover:bg-white/10 transition-colors"
+                        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                    >
+                        ✕ {isVietnamese ? 'Đóng' : 'Close'}
+                    </button>
+                    <YoutubeShortsFeedClient />
                 </div>
             )}
 
@@ -2579,7 +2578,7 @@ export default function MusicPlayerClient() {
                         top: ytFullMode ? mainContentRect!.top : desktopCardRect!.top + 88,
                         width: ytFullMode ? mainContentRect!.width : desktopCardRect!.width,
                         height: ytFullMode ? mainContentRect!.height : Math.max(0, desktopCardRect!.height - 88 - 130),
-                        zIndex: 20,
+                        zIndex: ytFullMode ? 450 : 20,
                     }}
                     onClick={e => e.stopPropagation()}
                     onWheel={e => { if (ytFullMode) feedRef.current?.scrollBy({ top: e.deltaY, behavior: 'smooth' }); }}
@@ -2589,7 +2588,7 @@ export default function MusicPlayerClient() {
                         src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(ytEmbedOrigin)}`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
-                        allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
+                        allow="autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                         allowFullScreen
                         referrerPolicy="strict-origin-when-cross-origin"
                         onLoad={(e) => {
@@ -2677,7 +2676,7 @@ export default function MusicPlayerClient() {
                         top: ytFullMode ? (mainContentRect?.top ?? 0) : ((desktopCardRect?.top ?? 0) + 88),
                         width: (ytFullMode ? mainContentRect?.width : desktopCardRect?.width) ?? window.innerWidth,
                         height: ytFullMode ? (mainContentRect?.height ?? window.innerHeight) : Math.max(0, (desktopCardRect?.height ?? window.innerHeight) - 88 - 130),
-                        zIndex: 20,
+                        zIndex: ytFullMode ? 450 : 20,
                         background: '#000',
                     }}
                     onClick={e => e.stopPropagation()}

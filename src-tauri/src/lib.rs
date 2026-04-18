@@ -30,7 +30,8 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<serde_json::Value, S
 
 #[tauri::command]
 fn read_audio_files_in_dir(dir_path: String) -> Result<Vec<serde_json::Value>, String> {
-    let audio_ext = ["mp3", "flac", "m4a", "wav", "ogg", "aac", "opus", "wma", "aiff"];
+    let audio_ext = ["mp3", "flac", "m4a", "wav", "ogg", "aac", "opus", "wma", "aiff",
+                      "mp4", "mov", "webm", "mkv", "m4v"];
     let path = std::path::Path::new(&dir_path);
     if !path.is_dir() {
         return Err("Not a directory".to_string());
@@ -56,10 +57,14 @@ fn read_audio_files_in_dir(dir_path: String) -> Result<Vec<serde_json::Value>, S
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        // Serve the app from http://localhost:3001 so YouTube embed API gets the same HTTP origin
-        // as dev mode (localhost:3001). YouTube accepts this origin; asset:// and tauri:// are rejected.
-        .plugin(tauri_plugin_localhost::Builder::new(3001).build())
+    let builder = tauri::Builder::default();
+
+    // tauri-plugin-localhost only needed in production to serve ../out/ at port 3001.
+    // In dev mode, Next.js already runs on port 3001 — adding the plugin would cause a port conflict.
+    #[cfg(not(dev))]
+    let builder = builder.plugin(tauri_plugin_localhost::Builder::new(3001).build());
+
+    builder
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -72,12 +77,13 @@ pub fn run() {
             // In production, tauri-plugin-localhost serves ../out/ via HTTP at port 3001.
             // Using ExternalUrl makes window.location.origin = "http://localhost:3001"
             // which is the same origin as dev mode — YouTube IFrame API accepts this.
-            #[cfg(not(dev))]
+            // Both dev and prod load via http://localhost:3001.
+            // In prod: tauri-plugin-localhost serves ../out/ at port 3001.
+            // In dev: Next.js dev server runs at port 3001 (started by beforeDevCommand).
+            // WebviewUrl::App("index.html") would load /index.html which 404s in Next.js dev server.
             let webview_url = WebviewUrl::External(
                 "http://localhost:3001".parse().expect("invalid localhost url"),
             );
-            #[cfg(dev)]
-            let webview_url = WebviewUrl::App("index.html".into());
 
             let builder = WebviewWindowBuilder::new(
                 app,
