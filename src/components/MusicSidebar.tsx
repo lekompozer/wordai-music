@@ -981,14 +981,17 @@ export default function MusicSidebar({
         const isExpanded = expandedChannel === slug;
         return (
             <div key={slug}>
-                <button
+                <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => {
                         onSelectChannel(slug);
                         setExpandedChannel(isExpanded ? null : slug);
                     }}
-                    onMouseEnter={e => showHover(e, { name: ch.name, subtitle: ch.label, accent: ch.accent })}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectChannel(slug); setExpandedChannel(isExpanded ? null : slug); } }}
+                    onMouseEnter={e => showHover(e as React.MouseEvent, { name: ch.name, subtitle: ch.label, accent: ch.accent })}
                     onMouseLeave={hideHover}
-                    className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all ${hoverCls} ${isSelected ? (effectiveDark ? 'bg-white/[0.08] shadow-[0_12px_30px_rgba(15,23,42,0.25)]' : 'bg-white shadow-[0_12px_28px_rgba(79,70,229,0.08)]') : ''}`}
+                    className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all cursor-pointer ${hoverCls} ${isSelected ? (effectiveDark ? 'bg-white/[0.08] shadow-[0_12px_30px_rgba(15,23,42,0.25)]' : 'bg-white shadow-[0_12px_28px_rgba(79,70,229,0.08)]') : ''}`}
                 >
                     <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                         style={{ background: `${ch.accent}20`, border: `1.5px solid ${ch.accent}40` }}>
@@ -1044,7 +1047,7 @@ export default function MusicSidebar({
                             : <ChevronRight className={`w-4 h-4 ${textSec}`} />
                         }
                     </div>
-                </button>
+                </div>
                 {isExpanded && !isUser && (
                     <div className={`border-l-2 ml-4 ${effectiveDark ? 'border-white/10' : 'border-slate-200/90'}`}
                         style={{ borderLeftColor: ch.accent + '50' }}>
@@ -1154,11 +1157,14 @@ export default function MusicSidebar({
                                 const isExpanded = expandedChannel === pub.id;
                                 return (
                                     <div key={pub.id}>
-                                        <button
+                                        <div
+                                            role="button"
+                                            tabIndex={0}
                                             onClick={() => { onSelectChannel(pub.id); setExpandedChannel(isExpanded ? null : pub.id); }}
-                                            onMouseEnter={e => showHover(e, { name: pub.name, subtitle: pub.description || (isVietnamese ? 'kênh cộng đồng' : 'community channel'), description: stat.totalLikes > 0 ? `${stat.totalLikes} ♥ likes` : undefined, accent: pub.accent })}
+                                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectChannel(pub.id); setExpandedChannel(isExpanded ? null : pub.id); } }}
+                                            onMouseEnter={e => showHover(e as React.MouseEvent, { name: pub.name, subtitle: pub.description || (isVietnamese ? 'kênh cộng đồng' : 'community channel'), description: stat.totalLikes > 0 ? `${stat.totalLikes} ♥ likes` : undefined, accent: pub.accent })}
                                             onMouseLeave={hideHover}
-                                            className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all ${hoverCls} ${isSelected ? (effectiveDark ? 'bg-white/[0.08]' : 'bg-white shadow-[0_12px_28px_rgba(79,70,229,0.08)]') : ''}`}
+                                            className={`w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all cursor-pointer ${hoverCls} ${isSelected ? (effectiveDark ? 'bg-white/[0.08]' : 'bg-white shadow-[0_12px_28px_rgba(79,70,229,0.08)]') : ''}`}
                                         >
                                             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                                                 style={{ background: `${pub.accent}20`, border: `1.5px solid ${pub.accent}40` }}>
@@ -1192,7 +1198,7 @@ export default function MusicSidebar({
                                                     : <ChevronRight className={`w-4 h-4 ${textSec}`} />
                                                 }
                                             </div>
-                                        </button>
+                                        </div>
                                         {isExpanded && (
                                             <div className={`border-l-2 ml-4`} style={{ borderLeftColor: pub.accent + '50' }}>
                                                 <ChannelTrackList
