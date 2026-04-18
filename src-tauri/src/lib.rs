@@ -57,6 +57,8 @@ fn read_audio_files_in_dir(dir_path: String) -> Result<Vec<serde_json::Value>, S
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // Serve the app from http://localhost:14789 so YouTube embed API gets a valid HTTP origin
+        .plugin(tauri_plugin_localhost::Builder::new(14789).build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())

@@ -783,7 +783,7 @@ function DesktopActions({
 function MusicSlide({
     track, channelMeta, isActive, isLiked, isSaved,
     isPlaying, onTogglePlay, volume, onVolumeChange,
-    currentTime, duration,
+    currentTime, duration, downloadProgress,
     onLike, onSave, onMenuOpen, onSeek, nearbyTracks, coverThemeIdx, audioEl, onYouTubeEnded,
 }: {
     track: SlideTrack;
@@ -797,6 +797,7 @@ function MusicSlide({
     onVolumeChange: (v: number) => void;
     currentTime: number;
     duration: number;
+    downloadProgress: number | null;
     onLike: () => void;
     onSave: () => void;
     onMenuOpen: () => void;
@@ -983,27 +984,42 @@ function MusicSlide({
                 {/* Progress bar + inline volume — hidden for YouTube/Facebook/TikTok embed tracks */}
                 {!track.youtubeId && !track.tiktokId && !track.facebookId && (
                     <div className="mt-3 flex items-center gap-1.5">
-                        <div
-                            className="flex-1 relative flex items-center cursor-pointer"
-                            style={{ height: 18 }}
-                            onClick={e => {
-                                e.stopPropagation();
-                                if (duration <= 0) return;
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                onSeek(((e.clientX - rect.left) / rect.width) * duration);
-                            }}
-                        >
-                            <div className="w-full h-[3px] rounded-full bg-white/15 relative overflow-visible">
-                                <div className="h-full rounded-full" style={{ width: `${progress}%`, background: trackTheme.accent }} />
-                                {duration > 0 && (
+                        {/* Download progress bar — shown while the track blob is being fetched */}
+                        {downloadProgress !== null ? (
+                            <div className="flex-1 flex flex-col gap-1">
+                                <div className="w-full h-[3px] rounded-full bg-white/15 overflow-hidden">
                                     <div
-                                        className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full pointer-events-none shadow-sm"
-                                        style={{ left: `max(0px, calc(${progress}% - 6px))`, background: trackTheme.accent, border: '1.5px solid rgba(255,255,255,0.5)' }}
+                                        className="h-full rounded-full transition-[width] duration-300"
+                                        style={{ width: `${downloadProgress}%`, background: trackTheme.accent }}
                                     />
-                                )}
+                                </div>
+                                <span className="text-white/50 text-[10px]">
+                                    {downloadProgress < 100 ? `⬇ ${downloadProgress}%` : '✓'}
+                                </span>
                             </div>
-                        </div>
-                        {duration > 0 && (
+                        ) : (
+                            <div
+                                className="flex-1 relative flex items-center cursor-pointer"
+                                style={{ height: 18 }}
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    if (duration <= 0) return;
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    onSeek(((e.clientX - rect.left) / rect.width) * duration);
+                                }}
+                            >
+                                <div className="w-full h-[3px] rounded-full bg-white/15 relative overflow-visible">
+                                    <div className="h-full rounded-full" style={{ width: `${progress}%`, background: trackTheme.accent }} />
+                                    {duration > 0 && (
+                                        <div
+                                            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full pointer-events-none shadow-sm"
+                                            style={{ left: `max(0px, calc(${progress}% - 6px))`, background: trackTheme.accent, border: '1.5px solid rgba(255,255,255,0.5)' }}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                        {downloadProgress === null && duration > 0 && (
                             <span className="text-white/40 text-[10px] tabular-nums flex-shrink-0">
                                 {fmtTime(currentTime)}
                             </span>
@@ -1145,7 +1161,7 @@ function MusicSection({
     slide, channelMeta, isActive, isDark, isVietnamese,
     isLiked, isSaved,
     isPlaying, onTogglePlay, volume, onVolumeChange,
-    currentTime, duration,
+    currentTime, duration, downloadProgress,
     onLike, onSave, onShare,
     onMenuOpen,
     likesCount, savesCount,
@@ -1164,6 +1180,7 @@ function MusicSection({
     onVolumeChange: (v: number) => void;
     currentTime: number;
     duration: number;
+    downloadProgress: number | null;
     onLike: () => void;
     onSave: () => void;
     onShare: () => void;
@@ -1206,6 +1223,7 @@ function MusicSection({
                         onVolumeChange={onVolumeChange}
                         currentTime={isActive ? currentTime : 0}
                         duration={isActive ? duration : slide.durationSec}
+                        downloadProgress={isActive ? downloadProgress : null}
                         onLike={onLike}
                         onSave={onSave}
                         onMenuOpen={onMenuOpen}
@@ -1276,6 +1294,15 @@ export default function MusicPlayerClient() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [currentPlaylistName, setCurrentPlaylistName] = useState('');
     const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+    // Download progress for current track (0-100 while downloading, null otherwise)
+    const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+
+    // YouTube embed origin — http://localhost:14789 when running in Tauri (plugin-localhost),
+    // real origin on web, fallback to wordai.pro for safety.
+    const ytEmbedOrigin = typeof window !== 'undefined'
+        ? (window.location.origin.startsWith('http') ? window.location.origin : 'http://localhost')
+        : 'https://wynai.pro';
+
     // Shuffle (default: ON)
     const [isShuffle, setIsShuffle] = useState<boolean>(() => {
         if (typeof window === 'undefined') return true;
@@ -1655,27 +1682,57 @@ export default function MusicPlayerClient() {
             let url = track.audioUrl;
             let blobUrl: string | null = null;
 
-            // Caching: check local DB, then session, if missing trigger background download
+            // ── Audio resolution & caching ───────────────────────────────────────────
+            // Priority: local IndexedDB → session memory → download with progress → direct URL
             if (url.startsWith('local:')) {
                 const blob = await getAudioBlob(track.id);
                 if (!blob || cancelled) return;
                 blobUrl = URL.createObjectURL(blob);
             } else {
+                // 1. Check persistent cache (IndexedDB — survives app restarts)
                 const persistedBlob = await getAudioBlob(track.id);
-                if (persistedBlob) {
+                if (persistedBlob && !cancelled) {
                     blobUrl = URL.createObjectURL(persistedBlob);
-                } else {
+                    setSessionBlob(track.id, persistedBlob);
+                } else if (!cancelled) {
+                    // 2. Check session memory (fast, in-memory, lost on reload)
                     const sessionBlob = getSessionBlob(track.id);
                     if (sessionBlob) {
                         blobUrl = URL.createObjectURL(sessionBlob);
                     } else if (hasRealAudioUrl && url.startsWith('http')) {
-                        // Trigger background download to local DB for next listen
-                        void fetch(url).then(res => res.ok ? res.blob() : null).then(blob => {
-                            if (blob) {
-                                void cacheAudioBlob(track.id, blob);
+                        // 3. Download with progress — show progress bar, play from blob
+                        setDownloadProgress(0);
+                        try {
+                            const resp = await fetch(url);
+                            if (resp.ok && !cancelled) {
+                                const contentLength = parseInt(resp.headers.get('content-length') || '0');
+                                const reader = resp.body!.getReader();
+                                const chunks: Uint8Array<ArrayBuffer>[] = [];
+                                let loaded = 0;
+                                while (true) {
+                                    const { done, value } = await reader.read();
+                                    if (cancelled) { reader.cancel(); setDownloadProgress(null); return; }
+                                    if (done) break;
+                                    chunks.push(value);
+                                    loaded += value.length;
+                                    if (contentLength > 0) {
+                                        setDownloadProgress(Math.min(99, Math.round((loaded / contentLength) * 100)));
+                                    }
+                                }
+                                const blob = new Blob(chunks, { type: resp.headers.get('content-type') || 'audio/mpeg' });
                                 setSessionBlob(track.id, blob);
+                                void cacheAudioBlob(track.id, blob); // persist to IndexedDB
+                                blobUrl = URL.createObjectURL(blob);
+                                setDownloadProgress(100);
+                                setTimeout(() => setDownloadProgress(null), 600);
+                            } else {
+                                setDownloadProgress(null);
+                                // Fallback: play directly from remote URL
                             }
-                        }).catch(() => null);
+                        } catch {
+                            setDownloadProgress(null);
+                            // Fallback: play directly from remote URL
+                        }
                     }
                 }
             }
@@ -1790,6 +1847,7 @@ export default function MusicPlayerClient() {
 
         return () => {
             cancelled = true;
+            setDownloadProgress(null);
             if (currentBlobUrlRef.current) {
                 URL.revokeObjectURL(currentBlobUrlRef.current);
                 currentBlobUrlRef.current = null;
@@ -1804,6 +1862,62 @@ export default function MusicPlayerClient() {
     useEffect(() => {
         if (audioRef.current) audioRef.current.volume = volume;
     }, [volume]);
+
+    // ── Background pre-fetch: download ALL audio tracks in current playlist/channel ───────────
+    // Triggers when slides array changes (new channel/playlist selected).
+    // Downloads each HTTP audio track to IndexedDB so subsequent plays are instant & offline.
+    // Rate-limited: 1 concurrent download, 2s gap between downloads to avoid hammering servers.
+    const prefetchSlidesRef = useRef<string>(''); // tracks which slides array we're pre-fetching for
+    useEffect(() => {
+        if (slides.length === 0) return;
+        const key = slides.map(s => s.id).join(',');
+        if (prefetchSlidesRef.current === key) return; // already pre-fetching this exact list
+        prefetchSlidesRef.current = key;
+
+        const cacheable = slides.filter(t => {
+            if (!t.audioUrl) return false;
+            const u = t.audioUrl;
+            if (u.startsWith('yt:') || u.startsWith('tt:') || u.startsWith('fb:') || u.startsWith('fbreel:') || u.startsWith('local:') || u.startsWith('asset:')) return false;
+            return u.startsWith('http');
+        });
+
+        let aborted = false;
+        let idx = 0;
+
+        const fetchNext = async () => {
+            if (aborted || idx >= cacheable.length) return;
+            const t = cacheable[idx++];
+            // Skip if already in IndexedDB
+            const existing = await getAudioBlob(t.id);
+            if (existing) {
+                setSessionBlob(t.id, existing);
+                setTimeout(fetchNext, 200); // fast-forward through already-cached
+                return;
+            }
+            // Skip if already in session (downloaded this run)
+            if (getSessionBlob(t.id)) {
+                setTimeout(fetchNext, 200);
+                return;
+            }
+            try {
+                const resp = await fetch(t.audioUrl);
+                if (resp.ok && !aborted) {
+                    const blob = await resp.blob();
+                    if (!aborted) {
+                        setSessionBlob(t.id, blob);
+                        void cacheAudioBlob(t.id, blob);
+                    }
+                }
+            } catch { /* ignore — will retry on next play */ }
+            // 2s gap between each background download to not interfere with user's connection
+            setTimeout(fetchNext, 2000);
+        };
+
+        // Start background pre-fetch after a 3s delay (let current track init() finish first)
+        const timer = setTimeout(fetchNext, 3000);
+        return () => { aborted = true; clearTimeout(timer); };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [slides]);
 
     // Sync play/pause. Call play() directly without waiting for AudioContext —
     // ctx.resume().then() is async and WKWebView may revoke autoplay permission in that gap.
@@ -2367,6 +2481,7 @@ export default function MusicPlayerClient() {
                                         onVolumeChange={setVolume}
                                         currentTime={isActive ? currentTime : 0}
                                         duration={isActive ? duration : slide.durationSec}
+                                        downloadProgress={isActive ? downloadProgress : null}
                                         onLike={() => handleLike(trackId)}
                                         onSave={() => handleSave(trackId)}
                                         onShare={handleShare}
@@ -2421,7 +2536,7 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopYtIframeRef}
-                        src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://wordai.pro&widget_referrer=https://wordai.pro`}
+                        src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(ytEmbedOrigin)}&widget_referrer=${encodeURIComponent(ytEmbedOrigin)}`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
