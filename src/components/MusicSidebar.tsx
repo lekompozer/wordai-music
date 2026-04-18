@@ -87,6 +87,8 @@ export interface MusicSidebarProps {
     /** Top offset in px — used to leave room for TitleBarStyle::Overlay traffic lights.
      *  Pass 28 in wordai-music so the drag area above MusicHeader stays accessible. */
     topOffset?: number;
+    onOpenShorts?: () => void;
+    isShortsActive?: boolean;
 }
 
 function fmtDur(sec: number): string {
@@ -232,7 +234,7 @@ export default function MusicSidebar({
     isOpen, onClose, channels, selectedChannelSlug,
     onSelectChannel, onPlayTracks, onLoadChannelTracks, isDark, isVietnamese, desktopPinned = false,
     currentTrackId, isShuffle = true, onToggleShuffle,
-    leftOffset, topOffset = 0,
+    leftOffset, topOffset = 0, onOpenShorts, isShortsActive
 }: MusicSidebarProps) {
     const homeSidebarCollapsed = useContext(HomeSidebarCollapsedCtx);
     const { user } = useWordaiAuth();
@@ -2220,12 +2222,19 @@ export default function MusicSidebar({
                 <div className="mx-3 mt-3 flex-shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
                     <button
                         onMouseDown={e => e.stopPropagation()}
-                        onClick={() => setShortsOpen(v => !v)}
-                        className={`w-full flex items-center justify-center gap-2 rounded-[18px] py-2 text-[11px] font-semibold transition-all ${shortsOpen
+                        onClick={() => {
+                            if (onOpenShorts) {
+                                onOpenShorts();
+                                if (isMobileViewport) onClose();
+                            } else {
+                                setShortsOpen(v => !v);
+                            }
+                        }}
+                        className={`w-full flex items-center justify-center gap-2 rounded-[18px] py-2 text-[11px] font-semibold transition-all ${(isShortsActive || shortsOpen)
                             ? 'text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]'
                             : (effectiveDark ? 'text-slate-300 hover:text-white hover:bg-white/[0.06]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80')
                             }`}
-                        style={shortsOpen ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)', WebkitAppRegion: 'no-drag' } as React.CSSProperties : { border: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}`, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                        style={(isShortsActive || shortsOpen) ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)', WebkitAppRegion: 'no-drag' } as React.CSSProperties : { border: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}`, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     >
                         <PlayCircle className="w-3.5 h-3.5" />
                         {isVietnamese ? '▶ Shorts / Trending' : '▶ Shorts / Trending'}

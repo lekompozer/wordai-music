@@ -10,6 +10,7 @@ import {
 import { useTheme, useLanguage } from '@/contexts/AppContext';
 import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
 import MusicSidebar, { type SidebarTrack } from './MusicSidebar';
+import YoutubeShortsFeedClient from './YoutubeShortsFeedClient';
 import { getAudioBlob, getSessionBlob, setSessionBlob, cacheAudioBlob } from '@/lib/audioCache';
 import { recordTrackPlay } from '@/services/musicService';
 import {
@@ -1291,6 +1292,7 @@ export default function MusicPlayerClient() {
 
     // Sidebar
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [subTab, setSubTab] = useState<'library' | 'shorts'>('library');
     const [currentPlaylistName, setCurrentPlaylistName] = useState('');
     const [autoplayBlocked, setAutoplayBlocked] = useState(false);
     // Download progress for current track (0-100 while downloading, null otherwise)
@@ -2122,7 +2124,9 @@ export default function MusicPlayerClient() {
 
         let ytDuration = track.durationSec > 0 ? track.durationSec : 0;
         const onMsg = (e: MessageEvent) => {
-            if (!String(e.origin).includes('youtube.com')) return;
+            const origin = String(e.origin);
+            // Allow both youtube.com and youtube-nocookie.com origins
+            if (!origin.includes('youtube.com') && !origin.includes('youtube-nocookie.com')) return;
             try {
                 const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
                 // Handle YouTube Errors
@@ -2269,6 +2273,14 @@ export default function MusicPlayerClient() {
         setDesktopFbEmbedUrl(null);
         setDesktopFbFading(false);
     }, []);
+
+    useEffect(() => {
+        if (subTab === 'shorts') {
+            setIsPlaying(false);
+            stopIframeMedia();
+            if (audioRef.current) { audioRef.current.pause(); }
+        }
+    }, [subTab, stopIframeMedia]);
 
     const handleSelectChannel = useCallback((slug: ChannelSlug) => {
         if (slug === selectedChannel) return;
@@ -2457,8 +2469,16 @@ export default function MusicPlayerClient() {
                 onToggleShuffle={() => setIsShuffle(v => { saveShuffleState(!v); return !v; })}
             />
 
+            {subTab === 'shorts' && (
+                <div className="h-full flex lg:pl-[320px]">
+                    <div className="flex-1 overflow-hidden relative z-[50] bg-[#06060f]">
+                        <YoutubeShortsFeedClient />
+                    </div>
+                </div>
+            )}
+
             {/* Main content wrapper: music sidebar (320 px default) on lg+, track list (256 px) on xl+ */}
-            <div className="h-full flex lg:pl-[320px]">
+            <div className={`h-full flex lg:pl-[320px] ${subTab === 'shorts' ? 'hidden' : ''}`}>
 
                 {/* Scrollable feed */}
                 <div
