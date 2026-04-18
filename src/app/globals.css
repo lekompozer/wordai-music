@@ -9,13 +9,24 @@ body {
     /* Music player is fullscreen — no page scroll */
 }
 
-/* Fix: WKWebView (Safari) may override input text color with system default,
-   making typed text invisible in dark-mode inputs.
-   -webkit-text-fill-color takes precedence over 'color' in WebKit, so
-   setting it to 'inherit' restores the CSS color set via Tailwind text-* classes. */
+/* Fix: WKWebView overrides input text with system color (invisible on dark bg).
+   Force all inputs to use the CSS color value (which Tailwind's text-* classes set). */
 input,
 textarea,
 select {
-    -webkit-text-fill-color: inherit;
+    -webkit-text-fill-color: currentColor;
     color: inherit;
+}
+
+/* Dark-mode default: ensure text is visible in dark-background inputs
+   when no explicit text-* Tailwind class is set. */
+@media (prefers-color-scheme: dark) {
+
+    input,
+    textarea,
+    select {
+        color: rgb(209 213 219);
+        /* gray-300 — readable on bg-gray-700/800 */
+        -webkit-text-fill-color: rgb(209 213 219);
+    }
 }

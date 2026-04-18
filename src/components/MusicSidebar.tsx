@@ -424,7 +424,7 @@ export default function MusicSidebar({
                 setPublicChannels(pub);
                 // The public channels already carry totalLikes from the backend.
                 // Also load stats for all system channel slugs so Hot Channels can rank them.
-                const systemSlugs = ['background-music', 'nhac-hot-tiktok', 'nhacviet-tiktok', 'rap-tiktok', 'nhac-soi-dong', 'nhac-en-chill'];
+                const systemSlugs = ['background-music', 'nhacviet-tiktok', 'rap-tiktok', 'nhac-soi-dong', 'nhac-en-chill'];
                 void getChannelStats(systemSlugs, user?.uid).then(stats => {
                     setChannelStats(prev => ({ ...prev, ...stats }));
                 });
