@@ -2467,11 +2467,21 @@ export default function MusicPlayerClient() {
                 currentTrackId={activeSlide?.id}
                 isShuffle={isShuffle}
                 onToggleShuffle={() => setIsShuffle(v => { saveShuffleState(!v); return !v; })}
+                onOpenShorts={() => setSubTab('shorts')}
+                isShortsActive={subTab === 'shorts'}
             />
 
             {subTab === 'shorts' && (
                 <div className="h-full flex lg:pl-[320px]">
                     <div className="flex-1 overflow-hidden relative z-[50] bg-[#06060f]">
+                        {/* Back button */}
+                        <button
+                            onClick={() => setSubTab('library')}
+                            className="absolute top-4 right-4 z-[60] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white/80 text-xs font-medium hover:bg-white/10 transition-colors"
+                            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                        >
+                            ✕ {isVietnamese ? 'Đóng' : 'Close'}
+                        </button>
                         <YoutubeShortsFeedClient />
                     </div>
                 </div>
