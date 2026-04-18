@@ -23,8 +23,17 @@ const firebaseConfig = {
 
 // Firebase config ready
 
+// Guard: during Next.js static-export prerender the NEXT_PUBLIC_* vars may be
+// undefined (e.g. in CI when not forwarded to tauri-action's beforeBuildCommand).
+// Throw a clear dev-time error but avoid crashing the build with an empty apiKey.
+if (!firebaseConfig.apiKey) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('[WordAI Firebase] NEXT_PUBLIC_FIREBASE_API_KEY is not set. Firebase will not be initialised.');
+  }
+}
+
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig.apiKey ? firebaseConfig : { ...firebaseConfig, apiKey: '__placeholder__' });
 
 // Initialize Firebase Authentication and get a reference to the service
 export const wordaiAuth = getAuth(app);
