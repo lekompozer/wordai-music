@@ -96,7 +96,7 @@ function fmtDur(sec: number): string {
 
 // ─── Tab type ─────────────────────────────────────────────────────────────────
 
-type Tab = 'channels' | 'search' | 'import' | 'playlists' | 'local';
+type Tab = 'shorts' | 'channels' | 'search' | 'import' | 'playlists' | 'local';
 
 // ─── Sub-component: ChannelTrackList ─────────────────────────────────────────
 
@@ -334,6 +334,11 @@ export default function MusicSidebar({
     const ACCENT_OPTIONS = ['#4f46e5', '#2563eb', '#7c3aed', '#0f766e', '#db2777', '#ea580c', '#16a34a'];
     const [createChAccent, setCreateChAccent] = useState(ACCENT_OPTIONS[0]);
 
+    // ── Shorts tab state ──────────────────────────────────────────────────────
+    const [shortsLang, setShortsLang] = useState<'vi' | 'en'>('vi');
+    const [shortsItems, setShortsItems] = useState<Array<{ youtube_id: string; title: string; channel: string; thumbnail: string; duration_sec: number }>>([]);
+    const [shortsLoading, setShortsLoading] = useState(false);
+
     // ── Resizable sidebar ─────────────────────────────────────────────────────
     const [sidebarWidth, setSidebarWidth] = useState(320);
     const isResizing = useRef(false);
@@ -439,6 +444,18 @@ export default function MusicSidebar({
         window.addEventListener(MUSIC_PLAYLISTS_UPDATED_EVENT, handleUpdated);
         return () => window.removeEventListener(MUSIC_PLAYLISTS_UPDATED_EVENT, handleUpdated);
     }, [refreshPlaylists]);
+
+    // Load Music Shorts when Shorts tab is active
+    useEffect(() => {
+        if (activeTab !== 'shorts') return;
+        setShortsLoading(true);
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://ai.wordai.pro';
+        fetch(`${API_BASE}/api/v1/trending/music?lang=${shortsLang}&limit=40&offset=0`)
+            .then(r => r.json())
+            .then(d => setShortsItems(d.items ?? []))
+            .catch(() => setShortsItems([]))
+            .finally(() => setShortsLoading(false));
+    }, [activeTab, shortsLang]);
 
     // Load local playlists from localStorage on mount and migrate multiple into one
     useEffect(() => {
@@ -1097,6 +1114,84 @@ export default function MusicSidebar({
             </div>
         );
     };
+
+    // ── Shorts tab renderer ───────────────────────────────────────────────────
+
+    const renderShortsTab = () => (
+        <div className="flex flex-col flex-1 overflow-hidden">
+            {/* Lang toggle */}
+            <div className="px-4 py-3 border-b flex-shrink-0 flex items-center justify-between"
+                style={{ borderColor: effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)' }}>
+                <span className={`text-sm font-medium ${textPrimary}`}>
+                    {isVietnamese ? 'Music Trending' : 'Music Trending'}
+                </span>
+                <div className="flex gap-1">
+                    {(['vi', 'en'] as const).map(l => (
+                        <button
+                            key={l}
+                            onClick={() => setShortsLang(l)}
+                            className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold transition-colors ${shortsLang === l
+                                ? 'text-white'
+                                : (effectiveDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.06]' : 'text-slate-500 hover:bg-slate-100')
+                                }`}
+                            style={shortsLang === l ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' } : undefined}
+                        >
+                            {l.toUpperCase()}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* List */}
+            <div className={`flex-1 overflow-y-auto px-2 py-2 [scrollbar-width:auto] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full ${effectiveDark ? '[&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/12' : '[&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300/80'}`}>
+                {shortsLoading && (
+                    <div className="flex justify-center py-12">
+                        <Loader2 className={`w-6 h-6 animate-spin ${effectiveDark ? 'text-white/40' : 'text-slate-400'}`} />
+                    </div>
+                )}
+                {!shortsLoading && shortsItems.length === 0 && (
+                    <div className="py-12 text-center px-4">
+                        <PlayCircle className={`w-10 h-10 mx-auto mb-3 ${textMuted}`} />
+                        <p className={`text-sm ${textSec}`}>
+                            {isVietnamese ? 'Không tải được danh sách.' : 'Could not load shorts.'}
+                        </p>
+                    </div>
+                )}
+                {!shortsLoading && shortsItems.map(item => (
+                    <button
+                        key={item.youtube_id}
+                        onClick={() => {
+                            const track: SidebarTrack = {
+                                id: `yt_${item.youtube_id}`,
+                                title: item.title,
+                                artist: item.channel,
+                                audioUrl: `yt:${item.youtube_id}`,
+                                durationSec: item.duration_sec,
+                                source: 'youtube',
+                                thumbnailUrl: item.thumbnail,
+                                youtubeId: item.youtube_id,
+                            };
+                            onPlayTracks([track], 0);
+                            onClose();
+                        }}
+                        className={`w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${hoverCls}`}
+                    >
+                        <div className="relative w-14 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-gray-800">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={item.thumbnail} alt="" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <Play className="w-3.5 h-3.5 text-white" fill="currentColor" />
+                            </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className={`text-xs font-medium line-clamp-2 leading-tight ${textPrimary}`}>{item.title}</p>
+                            <p className={`text-[10px] mt-0.5 truncate ${textSec}`}>{item.channel}</p>
+                        </div>
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
 
     const renderChannelsTab = () => {
         const nowPlayingChannel: { name: string; accent: string } | null =
@@ -2053,10 +2148,11 @@ export default function MusicSidebar({
     // ── Tab bar ───────────────────────────────────────────────────────────────
 
     const tabs: { id: Tab; label: string; labelVi: string; icon: React.ReactNode }[] = [
-        { id: 'channels', label: 'Channels', labelVi: 'Channels', icon: <AudioWaveform className="w-3.5 h-3.5" /> },
-        { id: 'search', label: 'Search', labelVi: 'Tìm kiếm', icon: <Youtube className="w-3.5 h-3.5" /> },
+        { id: 'shorts', label: 'Shorts', labelVi: 'Shorts', icon: <PlayCircle className="w-3.5 h-3.5" /> },
+        { id: 'channels', label: 'Chs', labelVi: 'Kênh', icon: <AudioWaveform className="w-3.5 h-3.5" /> },
+        { id: 'search', label: 'Search', labelVi: 'Tìm', icon: <Youtube className="w-3.5 h-3.5" /> },
         { id: 'import', label: 'Import', labelVi: 'Import', icon: <LinkIcon className="w-3.5 h-3.5" /> },
-        { id: 'playlists', label: 'Playlists', labelVi: 'Playlist', icon: <ListMusic className="w-3.5 h-3.5" /> },
+        { id: 'playlists', label: 'Lists', labelVi: 'PL', icon: <ListMusic className="w-3.5 h-3.5" /> },
         { id: 'local', label: 'Local', labelVi: 'Local', icon: <HardDrive className="w-3.5 h-3.5" /> },
     ];
 
@@ -2082,10 +2178,10 @@ export default function MusicSidebar({
                         </div>
                         <div>
                             <span className={`block text-base font-semibold ${textPrimary}`}>
-                                {isVietnamese ? 'Music Library' : 'Music Library'}
+                                WynAI Music
                             </span>
                             <span className={`block text-[10px] uppercase tracking-[0.28em] ${textMuted}`}>
-                                wordai / sound deck
+                                SOUND DECK
                             </span>
                         </div>
                     </div>
@@ -2095,12 +2191,12 @@ export default function MusicSidebar({
                 </div>
 
                 {/* Tab bar */}
-                <div className={`mx-3 mt-3 flex-shrink-0 grid grid-cols-5 gap-1 rounded-[22px] border p-1 ${border} ${elevatedSurface}`}>
+                <div className={`mx-3 mt-3 flex-shrink-0 grid grid-cols-6 gap-1 rounded-[22px] border p-1 ${border} ${elevatedSurface}`}>
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex flex-col items-center gap-1 rounded-[18px] py-2.5 text-[10px] font-semibold transition-all ${activeTab === tab.id
+                            className={`flex flex-col items-center gap-1 rounded-[18px] py-2.5 text-[9px] font-semibold transition-all ${activeTab === tab.id
                                 ? 'text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]'
                                 : `${textSec} ${effectiveDark ? 'hover:text-white hover:bg-white/[0.06]' : 'hover:text-slate-700 hover:bg-slate-100/80'}`
                                 }`}
@@ -2114,6 +2210,7 @@ export default function MusicSidebar({
 
                 {/* Tab content */}
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden pt-3">
+                    {activeTab === 'shorts' && renderShortsTab()}
                     {activeTab === 'channels' && renderChannelsTab()}
                     {activeTab === 'search' && renderSearchTab()}
                     {activeTab === 'import' && renderImportTab()}
