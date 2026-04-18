@@ -960,8 +960,8 @@ export default function MusicSidebar({
     const textSec = effectiveDark ? 'text-slate-300/70' : 'text-slate-500';
     const textMuted = effectiveDark ? 'text-slate-400/60' : 'text-slate-400';
     const inputCls = effectiveDark
-        ? 'bg-white/6 border-white/10 text-white placeholder:text-slate-400/55'
-        : 'bg-white/70 border-slate-200/90 text-slate-900 placeholder:text-slate-400';
+        ? 'bg-[#1e2a45] border-white/10 text-white placeholder:text-slate-400/55 [color-scheme:dark]'
+        : 'bg-white border-slate-200/90 text-slate-900 placeholder:text-slate-400 [color-scheme:light]';
     const hoverCls = effectiveDark ? 'hover:bg-white/[0.07]' : 'hover:bg-slate-100/80';
     const secondarySurface = effectiveDark ? 'bg-white/[0.055]' : 'bg-white/75';
     const elevatedSurface = effectiveDark ? 'bg-[#0f172a]/80' : 'bg-white/88';

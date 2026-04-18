@@ -9,24 +9,11 @@ body {
     /* Music player is fullscreen — no page scroll */
 }
 
-/* Fix: WKWebView overrides input text with system color (invisible on dark bg).
-   Force all inputs to use the CSS color value (which Tailwind's text-* classes set). */
+/* Fix: WKWebView applies UA background/text color to form elements.
+   Always inherit color from Tailwind text-* classes.
+   Individual inputs use [color-scheme:dark/light] to prevent UA white backgrounds. */
 input,
 textarea,
 select {
     -webkit-text-fill-color: currentColor;
-    color: inherit;
-}
-
-/* Dark-mode default: ensure text is visible in dark-background inputs
-   when no explicit text-* Tailwind class is set. */
-@media (prefers-color-scheme: dark) {
-
-    input,
-    textarea,
-    select {
-        color: rgb(209 213 219);
-        /* gray-300 — readable on bg-gray-700/800 */
-        -webkit-text-fill-color: rgb(209 213 219);
-    }
 }
