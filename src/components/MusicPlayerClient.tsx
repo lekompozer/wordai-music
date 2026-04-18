@@ -2143,15 +2143,20 @@ export default function MusicPlayerClient() {
                     const info = data.info;
                     if (info.playerState === 0) { triggerEnd(); return; }
                     if (info.playerState === 1) setDesktopYtPlaying(true);
-                    if (info.duration > 0) ytDuration = info.duration;
+                    if (info.duration > 0 && info.duration !== ytDuration) {
+                        ytDuration = info.duration;
+                        // Reset fallback with the real duration now that we know it
+                        clearTimeout(fallbackTimer);
+                        fallbackTimer = setTimeout(triggerEnd, (ytDuration + 10) * 1000);
+                    }
                     if (ytDuration > 0 && typeof info.currentTime === 'number' && info.currentTime >= ytDuration - 0.5) { triggerEnd(); return; }
                 }
             } catch { }
         };
         window.addEventListener('message', onMsg);
 
-        const fallbackSec = ytDuration > 10 ? ytDuration + 5 : 30; // 30s fallback when duration unknown (was 600s)
-        const fallbackTimer = setTimeout(triggerEnd, fallbackSec * 1000);
+        // Start with 5-min fallback for unknown-duration tracks; resets to ytDuration+10 when API reports real duration
+        let fallbackTimer = setTimeout(triggerEnd, ytDuration > 10 ? (ytDuration + 10) * 1000 : 300_000);
         const pingInterval = setInterval(() => {
             try {
                 const win = desktopYtIframeRef.current?.contentWindow;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { HomeSidebarCollapsedCtx } from './HomeShell';
 import {
@@ -446,17 +446,34 @@ export default function MusicSidebar({
         return () => window.removeEventListener(MUSIC_PLAYLISTS_UPDATED_EVENT, handleUpdated);
     }, [refreshPlaylists]);
 
-    // Load Music Shorts when Shorts tab is active
+    // Load Music Shorts when Shorts tab is active, then immediately load all into main player
     useEffect(() => {
         if (!shortsOpen) return;
         setShortsLoading(true);
         const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://ai.wordai.pro';
         fetch(`${API_BASE}/api/v1/trending/music?lang=${shortsLang}&limit=40&offset=0`)
             .then(r => r.json())
-            .then(d => setShortsItems(d.items ?? []))
+            .then(d => {
+                const items: Array<{ youtube_id: string; title: string; channel: string; thumbnail: string; duration_sec: number }> = d.items ?? [];
+                setShortsItems(items);
+                // Auto-load all shorts into the main snap-scroll player
+                if (items.length > 0) {
+                    const tracks: SidebarTrack[] = items.map(item => ({
+                        id: `yt_${item.youtube_id}`,
+                        title: item.title,
+                        artist: item.channel,
+                        audioUrl: `yt:${item.youtube_id}`,
+                        durationSec: item.duration_sec,
+                        source: 'youtube' as const,
+                        thumbnailUrl: item.thumbnail,
+                        youtubeId: item.youtube_id,
+                    }));
+                    onPlayTracks(tracks, 0);
+                }
+            })
             .catch(() => setShortsItems([]))
             .finally(() => setShortsLoading(false));
-    }, [shortsOpen, shortsLang]);
+    }, [shortsOpen, shortsLang]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Load local playlists from localStorage on mount and migrate multiple into one
     useEffect(() => {
@@ -2170,9 +2187,13 @@ export default function MusicSidebar({
                 >
                     <div className={`absolute inset-y-0 right-0 w-px transition-colors group-hover:w-[3px] ${effectiveDark ? 'bg-white/10 group-hover:bg-indigo-500/60' : 'bg-slate-200 group-hover:bg-indigo-400/70'}`} />
                 </div>
-                {/* Header — data-tauri-drag-region allows dragging the window from the sidebar title bar */}
-                <div data-tauri-drag-region className={`flex-shrink-0 flex items-center justify-between px-4 py-3 border-b ${border}`}>
-                    <div className="flex items-center gap-2">
+                {/* Header — data-tauri-drag-region + WebkitAppRegion:drag = window draggable from sidebar title bar */}
+                <div
+                    data-tauri-drag-region
+                    style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+                    className={`flex-shrink-0 flex items-center justify-between px-4 py-3 border-b ${border}`}
+                >
+                    <div className="flex items-center gap-2" style={{ pointerEvents: 'none' }}>
                         <div className="w-8 h-8 rounded-2xl flex items-center justify-center text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]" style={{ background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' }}>
                             <AudioWaveform className="w-4 h-4 text-white" />
                         </div>
@@ -2185,20 +2206,26 @@ export default function MusicSidebar({
                             </span>
                         </div>
                     </div>
-                    <button onClick={onClose} className={`w-8 h-8 rounded-full flex items-center justify-center lg:hidden ${effectiveDark ? 'text-slate-300/70 hover:bg-white/[0.08] hover:text-white' : 'text-slate-500 hover:bg-white hover:text-slate-900'}`}>
+                    <button
+                        onMouseDown={e => e.stopPropagation()}
+                        onClick={onClose}
+                        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center lg:hidden ${effectiveDark ? 'text-slate-300/70 hover:bg-white/[0.08] hover:text-white' : 'text-slate-500 hover:bg-white hover:text-slate-900'}`}
+                    >
                         <X className="w-4 h-4" />
                     </button>
                 </div>
 
                 {/* Shorts button — wide, above tabs */}
-                <div className="mx-3 mt-3 flex-shrink-0">
+                <div className="mx-3 mt-3 flex-shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
                     <button
+                        onMouseDown={e => e.stopPropagation()}
                         onClick={() => setShortsOpen(v => !v)}
                         className={`w-full flex items-center justify-center gap-2 rounded-[18px] py-2 text-[11px] font-semibold transition-all ${shortsOpen
                                 ? 'text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]'
                                 : (effectiveDark ? 'text-slate-300 hover:text-white hover:bg-white/[0.06]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80')
                             }`}
-                        style={shortsOpen ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' } : { border: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}` }}
+                        style={shortsOpen ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)', WebkitAppRegion: 'no-drag' } as React.CSSProperties : { border: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}`, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     >
                         <PlayCircle className="w-3.5 h-3.5" />
                         {isVietnamese ? '▶ Shorts / Trending' : '▶ Shorts / Trending'}
@@ -2206,16 +2233,17 @@ export default function MusicSidebar({
                 </div>
 
                 {/* Tab bar */}
-                <div className={`mx-3 mt-2 flex-shrink-0 grid grid-cols-5 gap-1 rounded-[22px] border p-1 ${border} ${elevatedSurface}`}>
+                <div className={`mx-3 mt-2 flex-shrink-0 grid grid-cols-5 gap-1 rounded-[22px] border p-1 ${border} ${elevatedSurface}`} style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
+                            onMouseDown={e => e.stopPropagation()}
                             onClick={() => { setActiveTab(tab.id); setShortsOpen(false); }}
                             className={`flex flex-col items-center gap-1 rounded-[18px] py-2.5 text-[9px] font-semibold transition-all ${activeTab === tab.id && !shortsOpen
                                 ? 'text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]'
                                 : `${textSec} ${effectiveDark ? 'hover:text-white hover:bg-white/[0.06]' : 'hover:text-slate-700 hover:bg-slate-100/80'}`
                                 }`}
-                            style={activeTab === tab.id ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' } : undefined}
+                            style={activeTab === tab.id && !shortsOpen ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)', WebkitAppRegion: 'no-drag' } as React.CSSProperties : { WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                         >
                             {tab.icon}
                             {isVietnamese ? tab.labelVi : tab.label}
