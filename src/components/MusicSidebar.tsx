@@ -1175,22 +1175,22 @@ export default function MusicSidebar({
                         </p>
                     </div>
                 )}
-                {!shortsLoading && shortsItems.map(item => (
+                {!shortsLoading && shortsItems.map((item, idx) => (
                     <button
                         key={item.youtube_id}
                         onClick={() => {
-                            const track: SidebarTrack = {
-                                id: `yt_${item.youtube_id}`,
-                                title: item.title,
-                                artist: item.channel,
-                                audioUrl: `yt:${item.youtube_id}`,
-                                durationSec: item.duration_sec,
-                                source: 'youtube',
-                                thumbnailUrl: item.thumbnail,
-                                youtubeId: item.youtube_id,
-                            };
-                            onPlayTracks([track], 0);
-                            onClose();
+                            // Load ALL shorts starting from clicked index so auto-advance works
+                            const allTracks: SidebarTrack[] = shortsItems.map(i => ({
+                                id: `yt_${i.youtube_id}`,
+                                title: i.title,
+                                artist: i.channel,
+                                audioUrl: `yt:${i.youtube_id}`,
+                                durationSec: i.duration_sec,
+                                source: 'youtube' as const,
+                                thumbnailUrl: i.thumbnail,
+                                youtubeId: i.youtube_id,
+                            }));
+                            onPlayTracks(allTracks, idx);
                         }}
                         className={`w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${hoverCls}`}
                     >
