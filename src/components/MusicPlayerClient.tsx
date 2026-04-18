@@ -1767,8 +1767,10 @@ export default function MusicPlayerClient() {
                 currentBlobUrlRef.current = null;
             }
         };
+        // NOTE: depend on activeIndex + track ID (not the full slides array) so that
+        // load-more appending tracks at the end doesn't cancel a running init().
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeIndex, slides]);
+    }, [activeIndex, slides[activeIndex]?.id]);
 
     // Sync volume
     useEffect(() => {
@@ -2347,6 +2349,7 @@ export default function MusicPlayerClient() {
                                             if (!container) return;
                                             isSwitchingChannel.current = true;
                                             setActiveIndex(idx);
+                                            setIsPlaying(true); // ensure audio starts on click
                                             container.scrollTop = idx * container.clientHeight;
                                             setTimeout(() => { isSwitchingChannel.current = false; }, 300);
                                         }}
@@ -2377,11 +2380,12 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopYtIframeRef}
-                        src={`https://www.youtube.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://www.wynai.pro`}
+                        src={`https://www.youtube.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://localhost&referer=https://localhost`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
+                        referrerPolicy="no-referrer"
                         onLoad={(e) => {
                             try {
                                 const win = e.currentTarget.contentWindow;

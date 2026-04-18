@@ -1169,6 +1169,7 @@ export default function MusicPlayerMobile() {
                                 style={{ border: 'none' }}
                                 allow="autoplay; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen
+                                referrerPolicy="strict-origin-when-cross-origin"
                                 onLoad={(e) => {
                                     try {
                                         const win = e.currentTarget.contentWindow;

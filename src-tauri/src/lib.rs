@@ -55,6 +55,8 @@ pub fn run() {
             // content fills the full window height. MusicHeader sits below the traffic lights.
             .title_bar_style(tauri::TitleBarStyle::Overlay)
             .hidden_title(true)
+            // Spoof Safari UA so YouTube iframe accepts the embedded player
+            .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15")
             .initialization_script(
                 "window.__TAURI_DESKTOP__ = true; \
                  window.__WORDAI_ERRORS__ = []; \
