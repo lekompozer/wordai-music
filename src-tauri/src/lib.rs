@@ -68,7 +68,7 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            let _window = WebviewWindowBuilder::new(
+            let builder = WebviewWindowBuilder::new(
                 app,
                 "main",
                 // Production: load local static files (next export output in ../out/)
@@ -80,10 +80,6 @@ pub fn run() {
             .min_inner_size(800.0, 600.0)
             .center()
             .resizable(true)
-            // macOS: hidden title bar — shows traffic lights (close/min/max) but no title text,
-            // content fills the full window height. MusicHeader sits below the traffic lights.
-            .title_bar_style(tauri::TitleBarStyle::Overlay)
-            .hidden_title(true)
             // Spoof Safari UA so YouTube iframe accepts the embedded player
             .user_agent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Safari/605.1.15")
             .initialization_script(
@@ -92,8 +88,16 @@ pub fn run() {
                  console.log('[WynAI Music] v0.1.0 desktop runtime active');"
             )
             // Enable DevTools in all builds for debugging
-            .devtools(true)
-            .build()?;
+            .devtools(true);
+
+            // macOS-only: hidden title bar — shows traffic lights but no title text,
+            // content fills the full window height. MusicHeader sits below the traffic lights.
+            #[cfg(target_os = "macos")]
+            let builder = builder
+                .title_bar_style(tauri::TitleBarStyle::Overlay)
+                .hidden_title(true);
+
+            let _window = builder.build()?;
 
             Ok(())
         })
