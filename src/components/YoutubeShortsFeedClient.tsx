@@ -14,15 +14,20 @@ export default function YoutubeShortsFeedClient() {
         let active = true;
         setLoading(true);
         fetch(`https://ai.wordai.pro/api/v1/trending/music?lang=${lang}&limit=40`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
             .then(data => {
                 if (!active) return;
-                setItems(data.data || []);
+                // API returns { items: [...], has_more: bool }
+                const items = data.items || data.data || [];
+                setItems(items);
                 setLoading(false);
             })
             .catch(err => {
                 if (!active) return;
-                console.error(err);
+                console.error('[YoutubeShortsFeed] fetch error:', err);
                 setLoading(false);
             });
         return () => { active = false; };
