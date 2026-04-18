@@ -773,7 +773,7 @@ export default function MusicPlayerMobile() {
 
         return () => {
             audio.pause();
-            audio.src = '';
+            audio.removeAttribute('src');
         };
     }, []); // ← ONCE — audio element lives for the entire component lifetime
 
@@ -999,7 +999,7 @@ export default function MusicPlayerMobile() {
             facebookIsReel: tr.audioUrl.startsWith('fbreel:') ? true : undefined,
         }));
         saveLastCtx({ type: 'playlist', id: mostRecent.id, name: mostRecent.name, tracks: mostRecent.tracks.slice(0, 50) });
-        if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; currentUrlRef.current = ''; }
+        if (audioRef.current) { audioRef.current.pause(); audioRef.current.removeAttribute('src'); currentUrlRef.current = ''; }
         isSwitchingRef.current = true; slideRefs.current = [];
         setCurrentPlaylistName(mostRecent.name);
         setSlides(newSlides); setSelectedChannel('playlist' as ChannelSlug);
@@ -1044,15 +1044,19 @@ export default function MusicPlayerMobile() {
 
     const handleSelectChannel = useCallback((slug: ChannelSlug) => {
         if (slug === selectedChannel) return;
-        if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; currentUrlRef.current = ''; }
+        if (audioRef.current) { audioRef.current.pause(); audioRef.current.removeAttribute('src'); currentUrlRef.current = ''; }
         stopIframeMedia();
         setIsPlaying(false); setSelectedChannel(slug); setCurrentTime(0); setDuration(0);
         saveLastCtx({ type: 'channel', slug });
         void loadAndBuildSlides(slug, true);
     }, [selectedChannel, loadAndBuildSlides, stopIframeMedia]);
 
-    const handlePlayTracks = useCallback((tracks: SidebarTrack[], playlistId?: string, playlistName?: string) => {
-        const ordered = isShuffle ? [tracks[0]!, ...shuffleArr(tracks.slice(1))] : tracks;
+    const handlePlayTracks = useCallback((tracks: SidebarTrack[], startIndex = 0, playlistId?: string, playlistName?: string) => {
+        let actualTracks = tracks;
+        if (startIndex > 0 && startIndex < tracks.length) {
+            actualTracks = [...tracks.slice(startIndex), ...tracks.slice(0, startIndex)];
+        }
+        const ordered = isShuffle ? [actualTracks[0]!, ...shuffleArr(actualTracks.slice(1))] : actualTracks;
         playlistAllTracksRef.current = ordered;
         const newSlides: SlideTrack[] = ordered.slice(0, MAX_SLIDES).map(tr => ({
             id: tr.id, title: tr.title, artist: tr.artist, audioUrl: tr.audioUrl,
@@ -1063,9 +1067,11 @@ export default function MusicPlayerMobile() {
             facebookIsReel: tr.audioUrl.startsWith('fbreel:') ? true : undefined,
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: ordered.slice(0, 50) });
-        if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; currentUrlRef.current = ''; }
+        if (audioRef.current) { audioRef.current.pause(); audioRef.current.removeAttribute('src'); currentUrlRef.current = ''; }
         stopIframeMedia();
-        isSwitchingRef.current = true; slideRefs.current = [];
+        isSwitchingRef.current = true;
+        if (feedRef.current) feedRef.current.scrollTop = 0;
+        slideRefs.current = [];
         setCurrentPlaylistName(playlistName ?? 'Playlist');
         setSlides(newSlides); setSelectedChannel('playlist' as ChannelSlug);
         setActiveIndex(0); setIsPlaying(false); setIsMenuOpen(false);

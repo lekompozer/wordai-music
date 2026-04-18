@@ -499,6 +499,22 @@ function getExistingAudioCtx(): AudioContext | null {
     return _sharedAudioCtx;
 }
 
+/** Silent oscillator node to keep AudioContext alive in WKWebView (prevents auto-suspension). */
+let _keepAliveOscillator: OscillatorNode | null = null;
+
+function startAudioCtxKeepAlive(ctx: AudioContext) {
+    if (_keepAliveOscillator) return; // already running
+    try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.value = 0; // completely silent
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        _keepAliveOscillator = osc;
+    } catch { /* ignore */ }
+}
+
 export function resumeVisualizerCtx() {
     // Create the shared context if it doesn't exist yet (first user gesture),
     // then resume it. Calling this inside a click/touchstart handler guarantees
@@ -506,10 +522,12 @@ export function resumeVisualizerCtx() {
     const ctx = getSharedAudioCtx();
     if (ctx && ctx.state !== 'running') {
         ctx.resume().then(() => {
+            startAudioCtxKeepAlive(ctx);
             // Notify AudioVisualizer instances that context is now running
             if (typeof window !== 'undefined') window.dispatchEvent(new Event('audioCtxReady'));
         }).catch(() => { /* ignore */ });
     } else if (ctx && ctx.state === 'running') {
+        startAudioCtxKeepAlive(ctx);
         if (typeof window !== 'undefined') window.dispatchEvent(new Event('audioCtxReady'));
     }
 }
@@ -1470,7 +1488,7 @@ export default function MusicPlayerClient() {
             channelSlug: 'playlist',
         }));
         saveLastCtx({ type: 'playlist', id: mostRecent.id, name: mostRecent.name, tracks: mostRecent.tracks.slice(0, 50) });
-        if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
+
         isSwitchingChannel.current = true;
         slideRefs.current = [];
         setCurrentPlaylistName(mostRecent.name);
@@ -1548,13 +1566,31 @@ export default function MusicPlayerClient() {
     }, [slides, loadAndBuildSlides]);
 
     // ── Audio management (desktop) ────────────────────────────────────────────
-    // Creates a new Audio() per track. The AudioVisualizer will call
-    // createMediaElementSource(audio) once per element, routing it through the
-    // shared WebAudio graph. Audio plays fine as long as the AudioContext is
-    // running, which is guaranteed by resumeVisualizerCtx() called on every click.
+    // SINGLE global Audio element — NEVER destroyed/recreated.
+    // WKWebView grants autoplay permission per DOM element. If we create a new
+    // Audio() on each track change, the new element lacks user-gesture authorization
+    // and .play() is blocked. By reusing the same element and only swapping .src,
+    // the browser remembers "this element was authorized" → play() works forever.
 
-    // Tracks the current blob URL so we can revoke it on the next track change.
     const currentBlobUrlRef = useRef<string | null>(null);
+
+    // Create the singleton Audio element once on mount
+    useEffect(() => {
+        if (!audioRef.current) {
+            const a = new Audio();
+            a.preload = 'auto';
+            a.crossOrigin = 'anonymous';
+            audioRef.current = a;
+            setAudioEl(a);
+        }
+        return () => {
+            const a = audioRef.current;
+            if (a) { a.pause(); a.src = ''; }
+        };
+    }, []);
+
+    // Crossfade duration
+    const CROSSFADE_S = 3;
 
     // Linear volume ramp helper used for crossfade between tracks
     const rampVolume = (a: HTMLAudioElement, from: number, to: number, ms: number, onDone?: () => void) => {
@@ -1568,33 +1604,30 @@ export default function MusicPlayerClient() {
         return iv;
     };
 
+    // Track-change effect: swap src on the singleton audio, never recreate it
     useEffect(() => {
         const track = slides[activeIndex];
         if (!track?.audioUrl) return;
 
-        // YouTube/TikTok/Facebook embed tracks: no audio element needed — the iframe handles playback
+        const audio = audioRef.current;
+
+        // YouTube/TikTok/Facebook embed tracks: pause audio but keep the element alive
         if (track.youtubeId || track.tiktokId || track.facebookId ||
             track.audioUrl.startsWith('yt:') || track.audioUrl.startsWith('tt:') || track.audioUrl.startsWith('fb:') || track.audioUrl.startsWith('fbreel:')) {
-            if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; audioRef.current = null; }
-            setAudioEl(null);
+            if (audio) { audio.pause(); audio.src = ''; }
             setCurrentTime(0);
             setDuration(track.durationSec || 0);
             return;
         }
 
-        // Stop & release previous audio
-        const prev = audioRef.current;
-        if (prev) {
-            prev.pause();
-            prev.src = '';
-        }
+        // Stop current playback (but keep the element)
+        if (audio) { audio.pause(); }
         if (currentBlobUrlRef.current) {
             URL.revokeObjectURL(currentBlobUrlRef.current);
             currentBlobUrlRef.current = null;
         }
 
         let cancelled = false;
-        const isPlaylist = track.channelSlug === 'playlist';
 
         const init = async () => {
             let url = track.audioUrl;
@@ -1607,19 +1640,16 @@ export default function MusicPlayerClient() {
                 if (!blob || cancelled) return;
                 blobUrl = URL.createObjectURL(blob);
             } else if (isImported) {
-                // Check persistent IndexedDB cache first (survives page refresh)
                 const persistedBlob = await getAudioBlob(track.id);
                 if (persistedBlob) {
                     blobUrl = URL.createObjectURL(persistedBlob);
                 } else {
-                    // Fall back to session cache
                     const sessionBlob = getSessionBlob(track.id);
                     if (sessionBlob) {
                         blobUrl = URL.createObjectURL(sessionBlob);
                     }
                 }
             } else {
-                // Check session blob cache for ALL tracks (not just playlist)
                 const sessionBlob = getSessionBlob(track.id);
                 if (sessionBlob) {
                     blobUrl = URL.createObjectURL(sessionBlob);
@@ -1630,91 +1660,36 @@ export default function MusicPlayerClient() {
 
             currentBlobUrlRef.current = blobUrl;
 
-            const audio = new Audio();
-            // Do NOT set crossOrigin='anonymous' — it causes CORS preflight failures
-            // on CDN MP3s that lack CORS headers, triggering instant error→advanceToNext.
-            // The AudioVisualizer handles createMediaElementSource failure gracefully.
+            if (!audio) return;
             audio.volume = volume;
-            audioRef.current = audio;
 
-            const CROSSFADE_S = 3;
-            let crossfadeTriggered = false;
-
-            audio.addEventListener('loadedmetadata', () => setDuration(audio.duration || 0));
-            audio.addEventListener('timeupdate', () => {
-                if (!crossfadeTriggered) setCurrentTime(audio.currentTime);
-
-                // Fade out in the last 3 s and simultaneously advance for overlapping crossfade
-                if (!crossfadeTriggered && isFinite(audio.duration) && audio.duration > 0) {
-                    const remaining = audio.duration - audio.currentTime;
-                    if (remaining > 0 && remaining <= CROSSFADE_S) {
-                        crossfadeTriggered = true;
-
-                        // Move this audio element to fadingOutRef so it survives cleanup
-                        if (audioRef.current === audio) {
-                            audioRef.current = null;
-                        }
-                        if (fadingOutRef.current) {
-                            fadingOutRef.current.pause();
-                            fadingOutRef.current.src = '';
-                        }
-                        fadingOutRef.current = audio;
-
-                        const myBlobUrl = currentBlobUrlRef.current;
-                        currentBlobUrlRef.current = null;
-
-                        const startVol = audio.volume;
-
-                        rampVolume(audio, startVol, 0, CROSSFADE_S * 1000, () => {
-                            audio.pause(); audio.src = '';
-                            if (fadingOutRef.current === audio) fadingOutRef.current = null;
-                            if (myBlobUrl) URL.revokeObjectURL(myBlobUrl);
-                        });
-
-                        // Advance instantly so the next track loads and fades in concurrently
-                        if (!cancelled) {
-                            // Record play count (track completed via crossfade)
-                            recordTrackPlay(track.id);
-                            // Tell the next track to fade in
-                            crossfadeAdvanceRef.current = true;
-                            // Ensure we force isPlaying state to stay true
-                            setIsPlaying(true);
-                            advanceToNext();
-                        }
-                    }
-                }
-            });
-            audio.addEventListener('error', () => { if (!cancelled) advanceToNext(); });
-            // Only advance on ended if crossfade wasn't already triggered
-            audio.addEventListener('ended', () => {
-                if (!cancelled && !crossfadeTriggered) {
+            // Assign event handlers (on... style replaces previous handlers automatically)
+            audio.ontimeupdate = () => setCurrentTime(audio.currentTime);
+            audio.onloadedmetadata = () => setDuration(audio.duration || 0);
+            audio.onended = () => {
+                if (!cancelled) {
                     recordTrackPlay(track.id);
                     advanceToNext();
                 }
-            });
-            audio.addEventListener('playing', () => setAutoplayBlocked(false));
+            };
+            audio.onerror = () => { if (!cancelled) advanceToNext(); };
+            audio.onplaying = () => setAutoplayBlocked(false);
 
-            audio.preload = 'auto';
+            // Swap source on the SAME element — WKWebView keeps autoplay permission
             audio.src = blobUrl ?? url;
             audio.load();
 
-            // Register the audio element for the AudioVisualizer AFTER src is set,
-            // so AudioMotionAnalyzer receives an element that already has a source.
             setAudioEl(audio);
             setCurrentTime(0);
             setDuration(0);
 
             if (isPlaying) {
-                // Ensure AudioContext is running before play() so WebAudio graph is live.
                 const doPlay = () => {
-                    // Check right before playing
                     const isCrossfadeIn = crossfadeAdvanceRef.current;
-                    const targetVol = volume; // default target volume
+                    const targetVol = volume;
 
                     if (isCrossfadeIn) {
-                        // Fade in over 3s — new track starts silent then ramps up
                         audio.volume = 0;
-                        // Reset immediately so subsequent plays don't restart volume at 0
                         crossfadeAdvanceRef.current = false;
                     }
 
@@ -1739,7 +1714,7 @@ export default function MusicPlayerClient() {
                 }
             }
 
-            // Cache current track blob for instant replay (all tracks, not just playlist)
+            // Cache current track blob for instant replay
             if (!blobUrl && !url.startsWith('local:')) {
                 void (async () => {
                     try {
@@ -1748,7 +1723,6 @@ export default function MusicPlayerClient() {
                             const blob = await res.blob();
                             if (!cancelled) {
                                 setSessionBlob(track.id, blob);
-                                // Persist to IndexedDB for imported tracks (survives page refresh)
                                 if (isImported) void cacheAudioBlob(track.id, blob);
                             }
                         }
@@ -1756,7 +1730,7 @@ export default function MusicPlayerClient() {
                 })();
             }
 
-            // Pre-fetch next track blob into cache so it starts instantly
+            // Pre-fetch next track blob
             const nextTrack = slides[activeIndex + 1];
             if (nextTrack?.audioUrl && !nextTrack.audioUrl.startsWith('local:') && !getSessionBlob(nextTrack.id)) {
                 void (async () => {
@@ -1766,7 +1740,6 @@ export default function MusicPlayerClient() {
                             const blob = await res.blob();
                             if (!cancelled) {
                                 setSessionBlob(nextTrack.id, blob);
-                                // Persist next track too if it's an imported track
                                 const nextIsImported = nextTrack.source === 'youtube' || nextTrack.source === 'tiktok';
                                 if (nextIsImported) void cacheAudioBlob(nextTrack.id, blob);
                             }
@@ -1780,10 +1753,6 @@ export default function MusicPlayerClient() {
 
         return () => {
             cancelled = true;
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.src = '';
-            }
             if (currentBlobUrlRef.current) {
                 URL.revokeObjectURL(currentBlobUrlRef.current);
                 currentBlobUrlRef.current = null;
@@ -2136,7 +2105,7 @@ export default function MusicPlayerClient() {
 
     const handleSelectChannel = useCallback((slug: ChannelSlug) => {
         if (slug === selectedChannel) return;
-        if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
+
         stopIframeMedia();
         setSelectedChannel(slug);
         setCurrentTime(0);
@@ -2202,11 +2171,15 @@ export default function MusicPlayerClient() {
         ?? (currentPlaylistName ? { ...PLAYLIST_META, name: currentPlaylistName, label: currentPlaylistName } : PLAYLIST_META);
     void _activeChannelMeta; // used by future code
 
-    const handlePlayTracks = useCallback((tracks: SidebarTrack[], playlistId?: string, playlistName?: string) => {
+    const handlePlayTracks = useCallback((tracks: SidebarTrack[], startIndex = 0, playlistId?: string, playlistName?: string) => {
+        let actualTracks = tracks;
+        if (startIndex > 0 && startIndex < tracks.length) {
+            actualTracks = [...tracks.slice(startIndex), ...tracks.slice(0, startIndex)];
+        }
         // Shuffle if enabled — always keep the first track (user's explicit selection) at position 0
         const orderedTracks = isShuffle
-            ? [tracks[0], ...shuffleArr(tracks.slice(1))]
-            : tracks;
+            ? [actualTracks[0], ...shuffleArr(actualTracks.slice(1))]
+            : actualTracks;
         // Store full playlist for pagination; show only first MAX_SLIDES in the feed
         playlistAllTracksRef.current = orderedTracks;
         const newSlides: SlideTrack[] = orderedTracks.slice(0, MAX_SLIDES).map(t => ({
@@ -2224,7 +2197,7 @@ export default function MusicPlayerClient() {
             facebookIsReel: t.facebookId ? (t.audioUrl.startsWith('fbreel:') ? true : undefined) : undefined,
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: orderedTracks.slice(0, 50) });
-        if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
+
         stopIframeMedia();
         // If first track is Facebook, set iframe src synchronously inside this gesture handler
         // so the browser grants unmuted autoplay permission.
@@ -2233,6 +2206,7 @@ export default function MusicPlayerClient() {
         }
         // Prevent IntersectionObserver from interfering during slide array swap
         isSwitchingChannel.current = true;
+        if (feedRef.current) feedRef.current.scrollTop = 0;
         slideRefs.current = [];
         setCurrentPlaylistName(playlistName ?? 'Playlist');
         setSlides(newSlides);
@@ -2393,7 +2367,7 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopYtIframeRef}
-                        src={`https://www.youtube.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=https://www.wordai.pro`}
+                        src={`https://www.youtube.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : 'https://tauri.localhost'}`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; encrypted-media; gyroscope; picture-in-picture"

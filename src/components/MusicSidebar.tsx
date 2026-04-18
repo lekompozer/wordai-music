@@ -70,7 +70,7 @@ export interface MusicSidebarProps {
     channels: SidebarChannel[];
     selectedChannelSlug: string;
     onSelectChannel: (slug: string) => void;
-    onPlayTracks: (tracks: SidebarTrack[], playlistId?: string, playlistName?: string) => void;
+    onPlayTracks: (tracks: SidebarTrack[], startIndex?: number, playlistId?: string, playlistName?: string) => void;
     onLoadChannelTracks: (slug: string) => Promise<SidebarTrack[]>;
     isDark: boolean;
     isVietnamese: boolean;
@@ -102,7 +102,7 @@ function ChannelTrackList({
 }: {
     slug: string;
     onLoadTracks: (slug: string) => Promise<SidebarTrack[]>;
-    onPlayTracks: (tracks: SidebarTrack[]) => void;
+    onPlayTracks: (tracks: SidebarTrack[], startIndex?: number) => void;
     accent: string;
     isDark: boolean;
     currentTrackId?: string;
@@ -139,7 +139,7 @@ function ChannelTrackList({
     return (
         <div className="flex flex-col">
             <button
-                onClick={() => onPlayTracks(tracks)}
+                onClick={() => onPlayTracks(tracks, 0)}
                 className="mx-3 mb-2 mt-1 flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium text-white transition-all"
                 style={{ background: accent }}
             >
@@ -152,7 +152,7 @@ function ChannelTrackList({
                     return (
                         <button
                             key={t.id}
-                            onClick={() => onPlayTracks(tracks.slice(i))}
+                            onClick={() => onPlayTracks(tracks, i)}
                             className={`group flex w-full items-center gap-2 px-3 py-2.5 text-left rounded-xl transition-all active:scale-[0.98] ${isActivePlaying
                                 ? (isDark ? 'bg-white/[0.08]' : 'bg-black/[0.04]')
                                 : (isDark ? 'hover:bg-white/[0.08]' : 'hover:bg-black/[0.05]')
@@ -476,7 +476,7 @@ export default function MusicSidebar({
             thumbnailUrl: result.thumbnail,
             youtubeId: result.youtube_id,
         };
-        onPlayTracks([track]);
+        onPlayTracks([track], 0);
         onClose();
     }, [onPlayTracks, onClose]);
 
@@ -516,7 +516,7 @@ export default function MusicSidebar({
                 youtubeId: ytId,
             };
             if (mode === 'play') {
-                onPlayTracks([{ ...track, source: 'youtube' }]);
+                onPlayTracks([{ ...track, source: 'youtube' }], 0);
                 onClose();
             } else {
                 setAddingTrack(track);
@@ -542,7 +542,7 @@ export default function MusicSidebar({
                 facebookIsReel: isReel ? true : undefined,
             };
             if (mode === 'play') {
-                onPlayTracks([{ ...track }]);
+                onPlayTracks([{ ...track }], 0);
                 onClose();
             } else {
                 setAddingTrack(track);
@@ -1083,7 +1083,7 @@ export default function MusicSidebar({
                                                 <ChannelTrackList
                                                     slug={pub.id}
                                                     onLoadTracks={onLoadChannelTracks}
-                                                    onPlayTracks={tracks => onPlayTracks(tracks, pub.id, pub.name)}
+                                                    onPlayTracks={(tracks, startIdx) => onPlayTracks(tracks, startIdx, pub.id, pub.name)}
                                                     accent={pub.accent}
                                                     isDark={isDark}
                                                     currentTrackId={currentTrackId}
@@ -1616,7 +1616,7 @@ export default function MusicSidebar({
                                     )}
                                     {pl.tracks.length > 0 && (
                                         <button
-                                            onClick={e => { e.stopPropagation(); onPlayTracks(pl.tracks, pl.id, pl.name); onClose(); }}
+                                            onClick={e => { e.stopPropagation(); onPlayTracks(pl.tracks, 0, pl.id, pl.name); onClose(); }}
                                             className="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-[0_10px_20px_rgba(79,70,229,0.24)]"
                                             style={{ background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' }}
                                         >
@@ -1685,7 +1685,7 @@ export default function MusicSidebar({
                                                         ? (effectiveDark ? 'bg-indigo-500/10' : 'bg-indigo-50')
                                                         : (effectiveDark ? 'hover:bg-white/[0.07]' : 'hover:bg-slate-100/80')
                                                         }`}
-                                                    onClick={() => { if (!isRenaming) { onPlayTracks(pl.tracks.slice(origIdx), pl.id, pl.name); onClose(); } }}
+                                                    onClick={() => { if (!isRenaming) { onPlayTracks(pl.tracks, origIdx, pl.id, pl.name); onClose(); } }}
                                                 >
                                                     {/* Track number → play icon on hover, music icon if active */}
                                                     <div className="w-5 flex-shrink-0 flex items-center justify-center">
