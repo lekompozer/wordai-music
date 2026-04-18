@@ -5,6 +5,9 @@
     "windows": [
         "main"
     ],
+    "urls": [
+        "http://localhost:3001/**"
+    ],
     "permissions": [
         "core:default",
         "core:event:default",
