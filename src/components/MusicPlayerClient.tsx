@@ -1301,7 +1301,7 @@ export default function MusicPlayerClient() {
     // If window.location.origin is still 'tauri://localhost' (plugin not active or
     // serving via asset:// instead of HTTP), fall back to the known localhost plugin port.
     const ytEmbedOrigin = typeof window !== 'undefined'
-        ? (window.location.origin.startsWith('http')
+        ? (window.location.origin.startsWith('http') || window.location.origin.startsWith('asset') || window.location.origin.startsWith('tauri')
             ? window.location.origin
             : ((window as unknown as Record<string, unknown>).__TAURI_DESKTOP__ ? 'http://localhost:14789' : 'https://wynai.pro'))
         : 'https://wynai.pro';
@@ -2125,6 +2125,18 @@ export default function MusicPlayerClient() {
             if (!String(e.origin).includes('youtube.com')) return;
             try {
                 const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+                // Handle YouTube Errors
+                if (data?.event === 'onError') {
+                    const errorCode = data?.info ?? data?.data;
+                    console.warn(`[YouTube Error] ${errorCode} | videoId: ${activeSlideYoutubeId}`);
+                    // YouTube error codes: 2 (invalid param), 5 (HTML5 error), 100 (not found/deleted)
+                    // 101/150 (owner restricted embed), 153 (undocumented server block)
+                    if ([2, 5, 100, 101, 150, 153].includes(Number(errorCode))) {
+                        triggerEnd(); // Skip to next track immediately
+                    }
+                    return;
+                }
+
                 if (data?.event === 'onStateChange' && (data?.info === 0 || data?.info === '0')) { triggerEnd(); return; }
                 if (data?.event === 'onStateChange' && (data?.info === 1 || data?.info === '1')) { setDesktopYtPlaying(true); return; }
                 if (data?.event === 'infoDelivery' && data?.info) {

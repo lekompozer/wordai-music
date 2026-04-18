@@ -177,26 +177,28 @@ Sau 600 giây (10 phút) fallback timer trigger → skip sang track tiếp
 
 ## 5. Fix Plan (Theo thứ tự ưu tiên)
 
-### Fix 1 — Xử lý `onError` postMessage (NGAY LẬP TỨC)
+### Fix 1 — Xử lý `onError` postMessage (ĐÃ HOÀN THÀNH)
 
-Trong `onMsg` handler (khoảng line 2123), thêm:
+Trong `onMsg` handler, đã cập nhật block catch `onError` event từ iframe `youtube-nocookie.com`:
 
 ```ts
-const onMsg = (e: MessageEvent) => {
-    if (!String(e.origin).includes('youtube.com')) return;
-    try {
-        const data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+                // Handle YouTube Errors
+                if (data?.event === 'onError') {
+                    const errorCode = data?.info ?? data?.data;
+                    console.warn(`[YouTube Error] ${errorCode} | videoId: ${activeSlideYoutubeId}`);
+                    // YouTube error codes: 2 (invalid param), 5 (HTML5 error), 100 (not found/deleted)
+                    // 101/150 (owner restricted embed), 153 (undocumented server block)
+                    if ([2, 5, 100, 101, 150, 153].includes(Number(errorCode))) {
+                        triggerEnd(); // Skip to next track immediately
+                    }
+                    return;
+                }
+```
 
-        // ✅ THÊM: Handle YouTube errors — bao gồm error 153
-        if (data?.event === 'onError') {
-            const errorCode = data?.data;
-            console.warn('[YouTube Error]', errorCode, 'videoId:', activeSlideYoutubeId);
-            // Error 100/101/150/153 = video không play được → skip ngay
-            if ([100, 101, 150, 153, 2, 5].includes(errorCode)) {
-                triggerEnd(); // Skip sang track tiếp theo
-            }
-            return;
-        }
+Nhờ đó, user không còn gặp tình trạng màn hình đen 10 phút. Ngay khi YouTube server chối từ (mã 150, 153,...), track sẽ được tự động bỏ qua sang bài kế tiếp.
+
+### Fix 2 — Sửa lại ytEmbedOrigin để match origin thực (ĐÃ HOÀN THÀNH)
+Đã cho phép `asset://` và `tauri://` origins được truyền thẳng qua URL `origin=` của iframe thay vì ép về localhost port `14789`. Điều này tránh mismatch origin message từ phía YouTube.
 
         // ... code cũ
     } catch { }
