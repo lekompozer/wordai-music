@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import {
     Music2, Heart, Bookmark, BookmarkCheck, Share2,
     Volume2, VolumeX, ChevronRight, Play, Pause, Menu, Plus, X, ListMusic, Shuffle,
-    Maximize2, Minimize2, HardDrive,
+    Maximize2, Minimize2, HardDrive, PanelLeftOpen, PanelLeftClose,
 } from 'lucide-react';
 import { useTheme, useLanguage } from '@/contexts/AppContext';
 import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
@@ -1292,6 +1292,7 @@ export default function MusicPlayerClient() {
     const [playlistPickerTrackId, setPlaylistPickerTrackId] = useState<string | null>(null);
 
     // Sidebar
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [subTab, setSubTab] = useState<'library' | 'shorts'>('library');
     const [currentPlaylistName, setCurrentPlaylistName] = useState('');
@@ -2463,6 +2464,7 @@ export default function MusicPlayerClient() {
                 isDark={isDark}
                 isVietnamese={isVietnamese}
                 desktopPinned
+                desktopCollapsed={sidebarCollapsed}
                 leftOffset={0}
                 topOffset={72}
                 currentTrackId={activeSlide?.id}
@@ -2473,7 +2475,7 @@ export default function MusicPlayerClient() {
             />
 
             {subTab === 'shorts' && (
-                <div className="fixed inset-0 z-[200] bg-[#06060f]" style={{ left: 320 }}>
+                <div className="fixed bottom-0 z-[200] bg-[#06060f]" style={{ left: 320, top: 72 }}>
                     {/* Back button */}
                     <button
                         onClick={() => setSubTab('library')}
@@ -2486,8 +2488,20 @@ export default function MusicPlayerClient() {
                 </div>
             )}
 
+            {/* Sidebar collapse toggle — floats at the top-left of the main content area */}
+            {subTab !== 'shorts' && (
+                <button
+                    onClick={() => setSidebarCollapsed(v => !v)}
+                    className="fixed z-[401] flex items-center justify-center w-7 h-7 rounded-lg bg-black/40 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+                    style={{ top: 76, left: sidebarCollapsed ? 8 : 284, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                    title={sidebarCollapsed ? (isVietnamese ? 'Hiện sidebar' : 'Show sidebar') : (isVietnamese ? 'Ẩn sidebar' : 'Hide sidebar')}
+                >
+                    {sidebarCollapsed ? <PanelLeftOpen className="w-3.5 h-3.5" /> : <PanelLeftClose className="w-3.5 h-3.5" />}
+                </button>
+            )}
+
             {/* Main content wrapper: music sidebar (320 px default) on lg+, track list (256 px) on xl+ */}
-            <div className={`h-full flex lg:pl-[320px] ${subTab === 'shorts' ? 'hidden' : ''}`}>
+            <div className={`h-full flex ${sidebarCollapsed ? '' : 'lg:pl-[320px]'} ${subTab === 'shorts' ? 'hidden' : ''}`}>
 
                 {/* Scrollable feed */}
                 <div

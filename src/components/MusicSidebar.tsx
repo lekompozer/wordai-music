@@ -78,6 +78,8 @@ export interface MusicSidebarProps {
     isDark: boolean;
     isVietnamese: boolean;
     desktopPinned?: boolean;
+    /** When true, collapses the sidebar even on desktop (lg+) screens. Default: false */
+    desktopCollapsed?: boolean;
     currentTrackId?: string;
     isShuffle?: boolean;
     onToggleShuffle?: () => void;
@@ -232,7 +234,7 @@ function saveUserChannels(channels: UserChannel[]) {
 
 export default function MusicSidebar({
     isOpen, onClose, channels, selectedChannelSlug,
-    onSelectChannel, onPlayTracks, onLoadChannelTracks, isDark, isVietnamese, desktopPinned = false,
+    onSelectChannel, onPlayTracks, onLoadChannelTracks, isDark, isVietnamese, desktopPinned = false, desktopCollapsed = false,
     currentTrackId, isShuffle = true, onToggleShuffle,
     leftOffset, topOffset = 0, onOpenShorts, isShortsActive
 }: MusicSidebarProps) {
@@ -538,7 +540,8 @@ export default function MusicSidebar({
             setLocalPlaylists(updated);
             setExpandedLocalPlaylist(masterId);
         } catch (e) {
-            setLocalError((e as Error).message || 'Failed to open files');
+            const msg = e instanceof Error ? e.message : String(e);
+            setLocalError(msg || 'Failed to open files');
         } finally {
             setLocalProcessing(false);
         }
@@ -570,7 +573,8 @@ export default function MusicSidebar({
             setLocalPlaylists(updated);
             setExpandedLocalPlaylist(masterId);
         } catch (e) {
-            setLocalError((e as Error).message || 'Failed to open folder');
+            const msg = e instanceof Error ? e.message : String(e);
+            setLocalError(msg || 'Failed to open folder');
         } finally {
             setLocalProcessing(false);
         }
@@ -2179,7 +2183,7 @@ export default function MusicSidebar({
         <>
             {/* Sidebar panel */}
             <div
-                className={`fixed bottom-0 z-[400] flex flex-col shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-transform duration-300 ${topOffset === 0 ? 'top-0' : ''} ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+                className={`fixed bottom-0 z-[400] flex flex-col shadow-[0_24px_80px_rgba(15,23,42,0.24)] transition-transform duration-300 ${topOffset === 0 ? 'top-0' : ''} ${isOpen ? 'translate-x-0' : `-translate-x-full${desktopCollapsed ? '' : ' lg:translate-x-0'}`}`}
                 style={{ ...panelStyle, width: isMobileViewport ? 300 : sidebarWidth, borderRight: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}`, left: isMobileViewport ? 0 : (leftOffset ?? (homeSidebarCollapsed ? 52 : 252)), top: topOffset > 0 ? topOffset : undefined }}
             >
                 {/* Resize handle — desktop only */}
