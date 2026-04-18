@@ -73,7 +73,7 @@ pub fn run() {
             // Using ExternalUrl makes window.location.origin = "http://localhost:3001"
             // which is the same origin as dev mode — YouTube IFrame API accepts this.
             #[cfg(not(dev))]
-            let webview_url = WebviewUrl::ExternalUrl(
+            let webview_url = WebviewUrl::External(
                 "http://localhost:3001".parse().expect("invalid localhost url"),
             );
             #[cfg(dev)]
