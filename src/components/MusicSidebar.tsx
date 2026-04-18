@@ -2222,8 +2222,8 @@ export default function MusicSidebar({
                         onMouseDown={e => e.stopPropagation()}
                         onClick={() => setShortsOpen(v => !v)}
                         className={`w-full flex items-center justify-center gap-2 rounded-[18px] py-2 text-[11px] font-semibold transition-all ${shortsOpen
-                                ? 'text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]'
-                                : (effectiveDark ? 'text-slate-300 hover:text-white hover:bg-white/[0.06]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80')
+                            ? 'text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]'
+                            : (effectiveDark ? 'text-slate-300 hover:text-white hover:bg-white/[0.06]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80')
                             }`}
                         style={shortsOpen ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)', WebkitAppRegion: 'no-drag' } as React.CSSProperties : { border: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}`, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     >
