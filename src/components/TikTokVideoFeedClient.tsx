@@ -287,12 +287,12 @@ export default function TikTokVideoFeedClient({
     // Sync isPlaying with pooled video events
     useEffect(() => {
         const video = getPooledVideo();
-        const onPlay  = () => setIsPlaying(true);
+        const onPlay = () => setIsPlaying(true);
         const onPause = () => setIsPlaying(false);
-        video.addEventListener('play',  onPlay);
+        video.addEventListener('play', onPlay);
         video.addEventListener('pause', onPause);
         return () => {
-            video.removeEventListener('play',  onPlay);
+            video.removeEventListener('play', onPlay);
             video.removeEventListener('pause', onPause);
         };
     }, []);
