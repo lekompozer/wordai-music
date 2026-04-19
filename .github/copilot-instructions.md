@@ -27,6 +27,23 @@ Built with Next.js 15 (static export) + React 19 + TypeScript + Tailwind CSS.
 
 ## Critical Rules (same as wordai)
 
+### ⚠️ Version Bump — MANDATORY on every code push
+
+**EVERY time you push new code, you MUST bump the version before committing:**
+
+```bash
+# Edit both files — keep them in sync:
+# 1. src-tauri/tauri.conf.json  →  "version": "0.1.X"
+# 2. src-tauri/Cargo.toml       →  version = "0.1.X"
+```
+
+Rules:
+- **Patch bump** (`0.1.X → 0.1.X+1`): for any bug fix or feature
+- **Minor bump** (`0.X.0 → 0.X+1.0`): for significant new features
+- **Never push without bumping** — the auto-updater compares version strings; if version doesn't change, `check_for_updates` returns `available: false` and users never get the update
+- After bumping, run `bash scripts/build-desktop.sh` to produce new artifacts and upload `latest.json`
+- Commit both files together: `git add src-tauri/tauri.conf.json src-tauri/Cargo.toml src-tauri/build_number.txt`
+
 ### Tauri API — ALWAYS dynamic import
 ```ts
 // ✅ CORRECT

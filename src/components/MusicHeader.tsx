@@ -14,7 +14,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { LogIn, LogOut, Globe, User, Heart, Copy, Check, X, Palette } from 'lucide-react';
+import { LogIn, LogOut, Globe, User, Heart, Copy, Check, X, Palette, Download, RefreshCw } from 'lucide-react';
 import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
 import { useTheme, useLanguage } from '@/contexts/AppContext';
 import { MUSIC_ACCENT_THEMES } from '@/lib/musicThemes';
@@ -139,6 +139,8 @@ function DonateModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
     return createPortal(modal, document.body);
 }
 
+const isTauriDesktop = () => typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>).__TAURI_DESKTOP__;
+
 // ─── Header ───────────────────────────────────────────────────────────────────
 
 export default function MusicHeader() {
@@ -149,6 +151,43 @@ export default function MusicHeader() {
     const [donateOpen, setDonateOpen] = useState(false);
     const [pickerOpen, setPickerOpen] = useState(false);
     const pickerRef = useRef<HTMLDivElement>(null);
+
+    // ── Auto-update state ──────────────────────────────────────────────────
+    type UpdateStatus = 'checking' | 'available' | 'upToDate' | 'error';
+    const [updateStatus, setUpdateStatus] = useState<UpdateStatus>('checking');
+    const [updateVersion, setUpdateVersion] = useState<string>('');
+    const [installing, setInstalling] = useState(false);
+
+    useEffect(() => {
+        if (!isTauriDesktop()) { setUpdateStatus('upToDate'); return; }
+        (async () => {
+            try {
+                const { invoke } = await import('@tauri-apps/api/core');
+                const result = await invoke<{ available: boolean; version?: string }>('check_for_updates');
+                if (result.available && result.version) {
+                    setUpdateVersion(result.version);
+                    setUpdateStatus('available');
+                } else {
+                    setUpdateStatus('upToDate');
+                }
+            } catch {
+                setUpdateStatus('upToDate'); // fail silently — don't block the UI
+            }
+        })();
+    }, []);
+
+    const handleInstallUpdate = async () => {
+        if (installing) return;
+        setInstalling(true);
+        try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            await invoke('download_and_install_update');
+            // app.restart() is called from Rust — this line won't be reached
+        } catch (e) {
+            console.error('Update install failed:', e);
+            setInstalling(false);
+        }
+    };
 
     useEffect(() => {
         if (!pickerOpen) return;
@@ -191,6 +230,29 @@ export default function MusicHeader() {
 
                 {/* Right: controls */}
                 <div className="flex items-center gap-2">
+                    {/* Upgrade button — shown when update available (active) or already latest (dimmed) */}
+                    {updateStatus !== 'checking' && (
+                        <button
+                            onMouseDown={e => e.stopPropagation()}
+                            onClick={updateStatus === 'available' && !installing ? handleInstallUpdate : undefined}
+                            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all select-none
+                                ${updateStatus === 'available' && !installing
+                                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'
+                                    : installing
+                                        ? 'bg-emerald-600/60 text-white cursor-default'
+                                        : 'bg-white/5 text-white/30 cursor-default'}`}
+                            title={updateStatus === 'available' ? `Click to upgrade to v${updateVersion}` : isVietnamese ? 'Đang dùng bản mới nhất' : 'Already up to date'}
+                        >
+                            {installing
+                                ? <><RefreshCw className="w-3 h-3 animate-spin" /><span>{isVietnamese ? 'Đang cài...' : 'Updating...'}</span></>
+                                : updateStatus === 'available'
+                                    ? <><Download className="w-3 h-3" /><span>v{updateVersion}</span></>
+                                    : <span>{isVietnamese ? 'Mới nhất' : 'Up to date'}</span>
+                            }
+                        </button>
+                    )}
+
                     {/* Keep free label + Support Us button */}
                     <span className="text-xs text-white/50 hidden sm:block select-none">Keep WynAI Music free</span>
                     <Heart className="w-3 h-3 text-red-400 fill-red-400 flex-shrink-0" />

@@ -29,6 +29,19 @@ async fn check_for_updates(app: tauri::AppHandle) -> Result<serde_json::Value, S
 }
 
 #[tauri::command]
+async fn download_and_install_update(app: tauri::AppHandle) -> Result<(), String> {
+    use tauri_plugin_updater::UpdaterExt;
+    let updater = app.updater().map_err(|e| format!("Updater unavailable: {e}"))?;
+    let update = updater.check().await
+        .map_err(|e| format!("Update check failed: {e}"))?
+        .ok_or_else(|| "Already up to date".to_string())?;
+    update.download_and_install(|_downloaded, _total| {}, || {})
+        .await
+        .map_err(|e| format!("Install failed: {e}"))?;
+    app.restart();
+}
+
+#[tauri::command]
 fn read_audio_files_in_dir(dir_path: String) -> Result<Vec<serde_json::Value>, String> {
     let audio_ext = ["mp3", "flac", "m4a", "wav", "ogg", "aac", "opus", "wma", "aiff",
                       "mp4", "mov", "webm", "mkv", "m4v"];
@@ -171,6 +184,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_app_build_info,
             check_for_updates,
+            download_and_install_update,
             google_auth::open_google_auth,
             read_audio_files_in_dir,
             copy_files_to_playlist_dir,
