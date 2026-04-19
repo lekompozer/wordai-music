@@ -935,15 +935,15 @@ function MusicSlide({
             )}
 
             {/* Audio visualizer — hidden for YouTube/TikTok/Facebook/localVideo tracks.
-                 Also skipped for asset:// tracks (createMediaElementSource is blocked for asset:// in WKWebView,
-                 which silently reroutes audio through a CORS-denied WebAudio graph → audio goes silent) */}
+                 asset:// files are fetched to blob URLs above so createMediaElementSource works.
+                 If fetch fails (blob URL not set) we fall back to SoundBars. */}
             {!track.youtubeId && !track.tiktokId && !track.facebookId && !track.isVideo && (
                 <div className="absolute bottom-[176px] inset-x-0 h-[80px] md:h-[120px] z-[5] pointer-events-none">
-                    {isActive && audioEl && !track.audioUrl?.startsWith('asset:')
+                    {isActive && audioEl && audioEl.src.startsWith('blob:')
                         ? <AudioVisualizer audioEl={audioEl} accent={trackTheme.accent} />
                         : <div className="flex h-full items-end justify-center pb-4">
                             <SoundBars playing={isActive && isPlaying} />
-                        </div>
+                          </div>
                     }
                 </div>
             )}
@@ -1761,11 +1761,28 @@ export default function MusicPlayerClient() {
             let blobUrl: string | null = null;
 
             // ── Audio resolution & caching ───────────────────────────────────────────
-            // Priority: local IndexedDB → session memory → download with progress → direct URL
+            // Priority: local IndexedDB → asset:// fetch to blob → session memory → download with progress → direct URL
             if (url.startsWith('local:')) {
                 const blob = await getAudioBlob(track.id);
                 if (!blob || cancelled) return;
                 blobUrl = URL.createObjectURL(blob);
+            } else if (url.startsWith('asset:')) {
+                // Convert asset:// (Tauri local file) to a blob URL so createMediaElementSource
+                // works in WebAudio (WKWebView blocks WebAudio for asset:// CORS) → enables AudioMotion visualizer.
+                // This also caches the file in session memory so repeat plays are instant.
+                const sessionBlob = getSessionBlob(track.id);
+                if (sessionBlob) {
+                    blobUrl = URL.createObjectURL(sessionBlob);
+                } else {
+                    try {
+                        const resp = await fetch(url);
+                        if (resp.ok && !cancelled) {
+                            const blob = new Blob([await resp.arrayBuffer()], { type: resp.headers.get('content-type') || 'audio/mpeg' });
+                            setSessionBlob(track.id, blob);
+                            blobUrl = URL.createObjectURL(blob);
+                        }
+                    } catch { /* fall back to direct asset:// URL below */ }
+                }
             } else {
                 // 1. Check persistent cache (IndexedDB — survives app restarts)
                 const persistedBlob = await getAudioBlob(track.id);

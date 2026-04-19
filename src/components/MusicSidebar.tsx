@@ -1790,86 +1790,86 @@ export default function MusicSidebar({
                         : uploadFiles.map(f => f.name.replace(/\.[^.]+$/, ''));
                     const count = displayItems.length;
                     return (
-                    <div className={`mx-2 mt-2 rounded-[24px] p-4 border backdrop-blur-sm ${effectiveDark ? 'bg-indigo-950/60 border-indigo-500/20' : 'bg-indigo-50 border-indigo-200'}`}>
-                        <div className="flex items-center gap-2 mb-3">
-                            <Upload className="w-3.5 h-3.5 text-indigo-400" />
-                            <p className={`text-xs font-semibold ${textPrimary}`}>
-                                {count} {isVietnamese ? 'file đã chọn' : 'file(s) selected'}
-                            </p>
-                        </div>
-
-                        {/* File list preview */}
-                        <div className={`max-h-[80px] overflow-y-auto mb-3 space-y-1 [scrollbar-width:thin] ${effectiveDark ? '[&::-webkit-scrollbar-thumb]:bg-white/20' : '[&::-webkit-scrollbar-thumb]:bg-slate-300'}`}>
-                            {displayItems.map((name, i) => (
-                                <div key={i} className={`flex items-center gap-2 text-[11px] ${textSec}`}>
-                                    <Music2 className="w-3 h-3 flex-shrink-0 text-indigo-400" />
-                                    <span className="truncate">{name}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Destination selector */}
-                        <label className={`text-[11px] font-medium ${textSec} mb-1 block`}>
-                            {isVietnamese ? 'Thêm vào:' : 'Add to:'}
-                        </label>
-                        <div className="relative mb-2">
-                            <select
-                                value={uploadTargetId}
-                                onChange={e => setUploadTargetId(e.target.value)}
-                                className={`w-full px-3 pr-7 py-2 rounded-2xl text-xs border appearance-none ${inputCls} outline-none focus:border-indigo-500`}
-                            >
-                                <option value="">{isVietnamese ? '+ Tạo playlist mới' : '+ New playlist'}</option>
-                                {playlists.map(pl => (
-                                    <option key={pl.id} value={pl.id}>{pl.name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none ${textSec}`} />
-                        </div>
-
-                        {!uploadTargetId && (
-                            <input
-                                type="text"
-                                value={uploadNewName}
-                                onChange={e => setUploadNewName(e.target.value)}
-                                placeholder={isVietnamese ? 'Tên playlist mới…' : 'New playlist name…'}
-                                className={`w-full px-3 py-2 rounded-2xl text-xs border ${inputCls} outline-none focus:border-indigo-500 mb-2`}
-                            />
-                        )}
-
-                        {uploadProcessing && (
-                            <div className="mb-2">
-                                <div className={`h-1.5 rounded-full overflow-hidden ${effectiveDark ? 'bg-white/10' : 'bg-slate-200'}`}>
-                                    <div className="h-full rounded-full bg-indigo-500 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
-                                </div>
-                                <p className={`text-[10px] mt-1 ${textSec}`}>{uploadProgress}%</p>
+                        <div className={`mx-2 mt-2 rounded-[24px] p-4 border backdrop-blur-sm ${effectiveDark ? 'bg-indigo-950/60 border-indigo-500/20' : 'bg-indigo-50 border-indigo-200'}`}>
+                            <div className="flex items-center gap-2 mb-3">
+                                <Upload className="w-3.5 h-3.5 text-indigo-400" />
+                                <p className={`text-xs font-semibold ${textPrimary}`}>
+                                    {count} {isVietnamese ? 'file đã chọn' : 'file(s) selected'}
+                                </p>
                             </div>
-                        )}
 
-                        <div className="flex gap-2">
-                            <button
-                                onClick={handleUploadCancel}
-                                disabled={uploadProcessing}
-                                className={`flex-1 py-2 rounded-2xl text-xs font-semibold disabled:opacity-50 ${effectiveDark ? 'bg-white/[0.08] text-slate-200' : 'bg-slate-100 text-slate-600'}`}
-                            >
-                                {isVietnamese ? 'Hủy' : 'Cancel'}
-                            </button>
-                            <button
-                                onClick={() => { void handleConfirmUpload(); }}
-                                disabled={uploadProcessing}
-                                className="flex-1 py-2 rounded-2xl text-white text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5"
-                                style={{ background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' }}
-                            >
-                                {uploadProcessing
-                                    ? <Loader2 className="w-3 h-3 animate-spin" />
-                                    : <Upload className="w-3 h-3" />
-                                }
-                                {uploadProcessing
-                                    ? (isVietnamese ? 'Đang lưu…' : 'Saving…')
-                                    : (isVietnamese ? 'Lưu' : 'Save')
-                                }
-                            </button>
+                            {/* File list preview */}
+                            <div className={`max-h-[80px] overflow-y-auto mb-3 space-y-1 [scrollbar-width:thin] ${effectiveDark ? '[&::-webkit-scrollbar-thumb]:bg-white/20' : '[&::-webkit-scrollbar-thumb]:bg-slate-300'}`}>
+                                {displayItems.map((name, i) => (
+                                    <div key={i} className={`flex items-center gap-2 text-[11px] ${textSec}`}>
+                                        <Music2 className="w-3 h-3 flex-shrink-0 text-indigo-400" />
+                                        <span className="truncate">{name}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Destination selector */}
+                            <label className={`text-[11px] font-medium ${textSec} mb-1 block`}>
+                                {isVietnamese ? 'Thêm vào:' : 'Add to:'}
+                            </label>
+                            <div className="relative mb-2">
+                                <select
+                                    value={uploadTargetId}
+                                    onChange={e => setUploadTargetId(e.target.value)}
+                                    className={`w-full px-3 pr-7 py-2 rounded-2xl text-xs border appearance-none ${inputCls} outline-none focus:border-indigo-500`}
+                                >
+                                    <option value="">{isVietnamese ? '+ Tạo playlist mới' : '+ New playlist'}</option>
+                                    {playlists.map(pl => (
+                                        <option key={pl.id} value={pl.id}>{pl.name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className={`absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none ${textSec}`} />
+                            </div>
+
+                            {!uploadTargetId && (
+                                <input
+                                    type="text"
+                                    value={uploadNewName}
+                                    onChange={e => setUploadNewName(e.target.value)}
+                                    placeholder={isVietnamese ? 'Tên playlist mới…' : 'New playlist name…'}
+                                    className={`w-full px-3 py-2 rounded-2xl text-xs border ${inputCls} outline-none focus:border-indigo-500 mb-2`}
+                                />
+                            )}
+
+                            {uploadProcessing && (
+                                <div className="mb-2">
+                                    <div className={`h-1.5 rounded-full overflow-hidden ${effectiveDark ? 'bg-white/10' : 'bg-slate-200'}`}>
+                                        <div className="h-full rounded-full bg-indigo-500 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                                    </div>
+                                    <p className={`text-[10px] mt-1 ${textSec}`}>{uploadProgress}%</p>
+                                </div>
+                            )}
+
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleUploadCancel}
+                                    disabled={uploadProcessing}
+                                    className={`flex-1 py-2 rounded-2xl text-xs font-semibold disabled:opacity-50 ${effectiveDark ? 'bg-white/[0.08] text-slate-200' : 'bg-slate-100 text-slate-600'}`}
+                                >
+                                    {isVietnamese ? 'Hủy' : 'Cancel'}
+                                </button>
+                                <button
+                                    onClick={() => { void handleConfirmUpload(); }}
+                                    disabled={uploadProcessing}
+                                    className="flex-1 py-2 rounded-2xl text-white text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5"
+                                    style={{ background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' }}
+                                >
+                                    {uploadProcessing
+                                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                                        : <Upload className="w-3 h-3" />
+                                    }
+                                    {uploadProcessing
+                                        ? (isVietnamese ? 'Đang lưu…' : 'Saving…')
+                                        : (isVietnamese ? 'Lưu' : 'Save')
+                                    }
+                                </button>
+                            </div>
                         </div>
-                    </div>
                     );
                 })()}
 
