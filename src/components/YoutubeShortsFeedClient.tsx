@@ -72,10 +72,17 @@ export default function YoutubeShortsFeedClient() {
             const fetched: YTShortItem[] = data.items || data.data || [];
 
             // Filter out already-seen videos
-            const unseen = fetched.filter(v => !seenIdsRef.current.has(v.youtube_id));
+            let unseen = fetched.filter(v => !seenIdsRef.current.has(v.youtube_id));
 
             // Advance offset by full batch size (not just unseen count)
             offsetRef.current += LIMIT;
+
+            // If ALL fetched videos are already seen → reset seen list so feed keeps cycling
+            if (unseen.length === 0 && fetched.length > 0) {
+                seenIdsRef.current.clear();
+                try { localStorage.removeItem(seenKey(lang)); } catch { /* ignore */ }
+                unseen = fetched;
+            }
 
             if (unseen.length > 0) {
                 setQueue(prev => {

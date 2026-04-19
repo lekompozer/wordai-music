@@ -1735,7 +1735,13 @@ export default function MusicPlayerClient() {
                 }
             };
             void initVideo();
-            return () => { cancelledVideo = true; };
+            return () => {
+                cancelledVideo = true;
+                // Pause & clear the video element so its audio doesn't bleed into the next track
+                const v = localVideoRef.current;
+                if (v) { v.pause(); v.src = ''; }
+                setLocalVideoVisible(false);
+            };
         }
 
         // For non-video tracks, hide local video overlay
@@ -2867,6 +2873,10 @@ export default function MusicPlayerClient() {
                     if (!v) return;
                     if (v.paused) { void v.play().catch(() => null); setIsPlaying(true); }
                     else { v.pause(); setIsPlaying(false); }
+                }}
+                onWheel={e => {
+                    e.preventDefault();
+                    feedRef.current?.scrollBy({ top: e.deltaY > 0 ? feedRef.current.clientHeight : -feedRef.current.clientHeight, behavior: 'smooth' });
                 }}
             />
             {/* Local video TikTok-style overlay — title, seek bar, like/save */}
