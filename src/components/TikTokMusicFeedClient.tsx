@@ -180,7 +180,7 @@ export default function TikTokMusicFeedClient({
     const togglePlay = useCallback(() => {
         const audio = audioRef.current;
         if (!audio) return;
-        if (audio.paused) audio.play().catch(() => {});
+        if (audio.paused) audio.play().catch(() => { });
         else audio.pause();
     }, []);
 
@@ -350,11 +350,10 @@ export default function TikTokMusicFeedClient({
                                 className="flex flex-col items-center gap-1.5"
                                 style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                             >
-                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 ${
-                                    savedIds.has(t.id)
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 ${savedIds.has(t.id)
                                         ? 'bg-pink-500'
                                         : 'bg-black/50 backdrop-blur-sm border border-white/20'
-                                }`}>
+                                    }`}>
                                     {downloadingId === t.id
                                         ? <Loader2 className="w-5 h-5 text-white animate-spin" />
                                         : savedIds.has(t.id)
