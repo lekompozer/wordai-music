@@ -32,7 +32,20 @@ const LS_KEY = 'wynai_local_library';
 export function getLocalPlaylists(): LocalPlaylist[] {
     try {
         const raw = localStorage.getItem(LS_KEY);
-        return raw ? (JSON.parse(raw) as LocalPlaylist[]) : [];
+        const playlists = raw ? (JSON.parse(raw) as LocalPlaylist[]) : [];
+        // Migrate: set isVideo from file extension for tracks that pre-date the isVideo field
+        const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'mkv', 'm4v'];
+        let dirty = false;
+        for (const pl of playlists) {
+            for (const t of pl.tracks) {
+                if (t.isVideo === undefined) {
+                    t.isVideo = VIDEO_EXTS.some(ext => (t.audioUrl || t.filePath || '').toLowerCase().endsWith(`.${ext}`));
+                    dirty = true;
+                }
+            }
+        }
+        if (dirty) localStorage.setItem(LS_KEY, JSON.stringify(playlists));
+        return playlists;
     } catch {
         return [];
     }

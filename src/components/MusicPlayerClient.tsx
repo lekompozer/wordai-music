@@ -2482,7 +2482,7 @@ export default function MusicPlayerClient() {
             tiktokId: t.tiktokId,
             facebookId: t.facebookId,
             facebookIsReel: t.facebookId ? (t.audioUrl.startsWith('fbreel:') ? true : undefined) : undefined,
-            isVideo: t.isVideo,
+            isVideo: t.isVideo ?? (t.source === 'local' ? ['mp4','mov','webm','mkv','m4v'].some(ext => (t.audioUrl ?? '').toLowerCase().includes(`.${ext}`)) : false),
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: orderedTracks.slice(0, 50) });
 
@@ -2687,7 +2687,7 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopYtIframeRef}
-                        src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(ytEmbedOrigin)}`}
+                        src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
