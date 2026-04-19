@@ -1248,36 +1248,83 @@ export default function MusicSidebar({
                     </div>
                 )}
                 {!shortsLoading && shortsItems.map((item, idx) => (
-                    <button
+                    <div
                         key={item.youtube_id}
-                        onClick={() => {
-                            // Load ALL shorts starting from clicked index so auto-advance works
-                            const allTracks: SidebarTrack[] = shortsItems.map(i => ({
-                                id: `yt_${i.youtube_id}`,
-                                title: i.title,
-                                artist: i.channel,
-                                audioUrl: `yt:${i.youtube_id}`,
-                                durationSec: i.duration_sec,
-                                source: 'youtube' as const,
-                                thumbnailUrl: i.thumbnail,
-                                youtubeId: i.youtube_id,
-                            }));
-                            onPlayTracks(allTracks, idx);
-                        }}
-                        className={`w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-all ${hoverCls}`}
+                        className={`group w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all ${hoverCls}`}
                     >
-                        <div className="relative w-14 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-gray-800">
+                        {/* Thumbnail + play click area */}
+                        <button
+                            className="relative w-14 h-9 rounded-lg overflow-hidden flex-shrink-0 bg-gray-800"
+                            onClick={() => {
+                                const allTracks: SidebarTrack[] = shortsItems.map(i => ({
+                                    id: `yt_${i.youtube_id}`,
+                                    title: i.title,
+                                    artist: i.channel,
+                                    audioUrl: `yt:${i.youtube_id}`,
+                                    durationSec: i.duration_sec,
+                                    source: 'youtube' as const,
+                                    thumbnailUrl: i.thumbnail,
+                                    youtubeId: i.youtube_id,
+                                }));
+                                onPlayTracks(allTracks, idx);
+                            }}
+                        >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={item.thumbnail} alt="" className="w-full h-full object-cover" />
                             <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                                 <Play className="w-3.5 h-3.5 text-white" fill="currentColor" />
                             </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
+                        </button>
+                        {/* Title + channel — click to play */}
+                        <button
+                            className="flex-1 min-w-0 text-left"
+                            onClick={() => {
+                                const allTracks: SidebarTrack[] = shortsItems.map(i => ({
+                                    id: `yt_${i.youtube_id}`,
+                                    title: i.title,
+                                    artist: i.channel,
+                                    audioUrl: `yt:${i.youtube_id}`,
+                                    durationSec: i.duration_sec,
+                                    source: 'youtube' as const,
+                                    thumbnailUrl: i.thumbnail,
+                                    youtubeId: i.youtube_id,
+                                }));
+                                onPlayTracks(allTracks, idx);
+                            }}
+                        >
                             <p className={`text-xs font-medium line-clamp-2 leading-tight ${textPrimary}`}>{item.title}</p>
                             <p className={`text-[10px] mt-0.5 truncate ${textSec}`}>{item.channel}</p>
-                        </div>
-                    </button>
+                        </button>
+                        {/* Save to playlist */}
+                        <button
+                            onClick={e => {
+                                e.stopPropagation();
+                                const track: PlaylistTrack = {
+                                    id: `yt_${item.youtube_id}`,
+                                    title: item.title,
+                                    artist: item.channel,
+                                    audioUrl: `yt:${item.youtube_id}`,
+                                    durationSec: item.duration_sec,
+                                    source: 'youtube',
+                                    thumbnailUrl: item.thumbnail,
+                                    youtubeId: item.youtube_id,
+                                };
+                                pendingYtId.current = item.youtube_id;
+                                setAddingTrack(track);
+                                setPickerOpen(true);
+                            }}
+                            title={isVietnamese ? 'Lưu vào playlist' : 'Save to playlist'}
+                            className={`flex-shrink-0 p-1.5 rounded-xl transition-all ${addedYtIds.has(item.youtube_id)
+                                ? 'text-indigo-400 bg-indigo-500/15'
+                                : `opacity-0 group-hover:opacity-100 ${effectiveDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.08]' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`
+                            }`}
+                        >
+                            {addedYtIds.has(item.youtube_id)
+                                ? <Check className="w-3.5 h-3.5" />
+                                : <ListMusic className="w-3.5 h-3.5" />
+                            }
+                        </button>
+                    </div>
                 ))}
             </div>
         </div>
@@ -2301,7 +2348,7 @@ export default function MusicSidebar({
                                         className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold transition-colors ${shortsLang === l
                                             ? 'text-white'
                                             : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
-                                        }`}
+                                            }`}
                                     >
                                         {l === 'vi' ? 'Vietnamese' : 'English'}
                                     </button>
