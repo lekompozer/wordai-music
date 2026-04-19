@@ -2370,6 +2370,9 @@ export default function MusicPlayerClient() {
             setIsPlaying(false);
             stopIframeMedia();
             if (audioRef.current) { audioRef.current.pause(); }
+            // Hide local video overlay so it doesn't cover Shorts or the music card when returning
+            if (localVideoRef.current) { localVideoRef.current.pause(); localVideoRef.current.src = ''; }
+            setLocalVideoVisible(false);
         }
     }, [subTab, stopIframeMedia]);
 
@@ -2569,7 +2572,7 @@ export default function MusicPlayerClient() {
             />
 
             {subTab === 'shorts' && (
-                <div className="fixed bottom-0 z-[200] bg-[#06060f]" style={{ left: 320, top: 72 }}>
+                <div className="fixed bottom-0 z-[200] bg-[#06060f]" style={{ left: sidebarCollapsed ? 0 : 320, top: 72, right: 0 }}>
                     {/* Back button */}
                     <button
                         onClick={() => setSubTab('library')}

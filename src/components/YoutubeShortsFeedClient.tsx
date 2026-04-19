@@ -114,19 +114,8 @@ export default function YoutubeShortsFeedClient() {
     }, [lang]);
 
     // ── Also mark seen when active index advances (scrolled past) ────────────
-    const handleActiveIndexChange = useCallback((index: number) => {
-        // Mark all videos up to (but not including) current index as seen
-        setQueue(prev => {
-            for (let i = 0; i < index && i < prev.length; i++) {
-                const id = prev[i].youtube_id;
-                if (!seenIdsRef.current.has(id)) {
-                    seenIdsRef.current.add(id);
-                }
-            }
-            saveSeenIds(lang, seenIdsRef.current);
-            return prev; // no structural change needed
-        });
-    }, [lang]);
+    // Kept as no-op — seen tracking is done only by handleVideoWatched (per active video)
+    const handleActiveIndexChange = useCallback((_index: number) => { /* no-op */ }, []);
 
     // ── Load more when near the end ──────────────────────────────────────────
     const handleLoadMore = useCallback(async () => {

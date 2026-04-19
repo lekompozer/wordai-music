@@ -325,7 +325,7 @@ export default function YoutubeShortsPlayer({
                     >
                         <iframe
                             ref={pooledIframeRef}
-                            src={`https://www.youtube.com/embed/${firstItem.youtube_id}?autoplay=1&mute=1&controls=${showControls ? 1 : 0}&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${origin}`}
+                            src={`https://www.youtube-nocookie.com/embed/${firstItem.youtube_id}?autoplay=1&mute=1&controls=${showControls ? 1 : 0}&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${origin}`}
                             className="w-full h-full border-0"
                             allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
                             allowFullScreen
