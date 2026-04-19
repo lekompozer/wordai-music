@@ -101,7 +101,7 @@ function fmtDur(sec: number): string {
 
 // ─── Tab type ─────────────────────────────────────────────────────────────────
 
-type Tab = 'channels' | 'search' | 'import' | 'playlists' | 'local';
+type Tab = 'channels' | 'search' | 'import' | 'playlists';
 
 // ─── Sub-component: ChannelTrackList ─────────────────────────────────────────
 
@@ -847,6 +847,17 @@ export default function MusicSidebar({
         const { playlistId, trackId, value } = renamingTrack;
         const newTitle = value.trim();
         setRenamingTrack(null);
+        // Local library tracks — update localStorage only
+        if (playlistId === 'local_library') {
+            const { getLocalPlaylists, saveLocalPlaylists } = await import('@/lib/localLibrary');
+            const current = getLocalPlaylists();
+            if (current[0]) {
+                current[0].tracks = current[0].tracks.map(t => t.id === trackId ? { ...t, title: newTitle } : t);
+                saveLocalPlaylists(current);
+                setLocalPlaylists([...current]);
+            }
+            return;
+        }
         try {
             await renamePlaylistTrack(playlistId, trackId, newTitle);
             setPlaylists(prev => prev.map(pl => pl.id === playlistId
@@ -855,6 +866,17 @@ export default function MusicSidebar({
         } catch (err) {
             setPlaylistError((err as Error).message || 'Failed to rename track');
         }
+    };
+
+    // ── Remove local track ────────────────────────────────────────────────────
+    const handleRemoveLocalTrack = (trackId: string) => {
+        import('@/lib/localLibrary').then(({ getLocalPlaylists, saveLocalPlaylists }) => {
+            const current = getLocalPlaylists();
+            if (!current[0]) return;
+            current[0].tracks = current[0].tracks.filter(t => t.id !== trackId);
+            saveLocalPlaylists(current);
+            setLocalPlaylists([...current]);
+        });
     };
 
     // ── Like / unlike a channel ───────────────────────────────────────────────
@@ -1842,11 +1864,116 @@ export default function MusicSidebar({
                     </div>
                 )}
 
+                {/* ── Local Library section ──────────────────────────────── */}
+                {(typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>).__TAURI_DESKTOP__) && (
+                    <div className="mb-2">
+                        {/* Section header */}
+                        <div className={`flex items-center justify-between px-4 py-2`}>
+                            <div className="flex items-center gap-2">
+                                <HardDrive className={`w-3.5 h-3.5 ${effectiveDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
+                                <span className={`text-[11px] font-semibold uppercase tracking-wider ${textSec}`}>
+                                    {isVietnamese ? 'Nhạc trên máy' : 'Local Files'}
+                                </span>
+                                {localPlaylists[0] && <span className={`text-[10px] ${textMuted}`}>({localPlaylists[0].tracks.length})</span>}
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <button
+                                    onClick={handleAddLocalFiles}
+                                    disabled={localProcessing}
+                                    title={isVietnamese ? 'Thêm file' : 'Add files'}
+                                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium border transition-all disabled:opacity-50 ${effectiveDark ? 'border-white/15 text-slate-300 hover:bg-white/[0.08]' : 'border-slate-200 text-slate-600 hover:bg-slate-100'}`}
+                                >
+                                    {localProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <FilePlus2 className="w-3 h-3" />}
+                                    {isVietnamese ? 'File' : 'Files'}
+                                </button>
+                                <button
+                                    onClick={handleAddLocalFolder}
+                                    disabled={localProcessing}
+                                    title={isVietnamese ? 'Mở folder' : 'Add folder'}
+                                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium border transition-all disabled:opacity-50 ${effectiveDark ? 'border-white/15 text-slate-300 hover:bg-white/[0.08]' : 'border-slate-200 text-slate-600 hover:bg-slate-100'}`}
+                                >
+                                    {localProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <FolderOpen className="w-3 h-3" />}
+                                    {isVietnamese ? 'Folder' : 'Folder'}
+                                </button>
+                            </div>
+                        </div>
+                        {localError && <p className="px-4 pb-1 text-xs text-rose-400">{localError}</p>}
+                        {/* Track list */}
+                        {localPlaylists[0] && localPlaylists[0].tracks.map((t, i) => {
+                            const isLocalRenaming = renamingTrack?.trackId === t.id && renamingTrack?.playlistId === 'local_library';
+                            const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'mkv', 'm4v'];
+                            return (
+                                <div
+                                    key={t.id}
+                                    onContextMenu={e => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setContextMenu({ trackId: t.id, playlistId: 'local_library', trackTitle: t.title, x: e.clientX, y: e.clientY });
+                                    }}
+                                    className={`group flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all ${effectiveDark ? 'hover:bg-white/[0.06]' : 'hover:bg-slate-100/80'}`}
+                                    onClick={() => {
+                                        if (isLocalRenaming) return;
+                                        onPlayTracks(localPlaylists[0].tracks.map(tr => ({
+                                            id: tr.id, title: tr.title, artist: tr.artist,
+                                            audioUrl: tr.audioUrl, durationSec: tr.durationSec,
+                                            source: 'local',
+                                            isVideo: tr.isVideo ?? VIDEO_EXTS.some(e => (tr.audioUrl || tr.filePath || '').toLowerCase().endsWith(`.${e}`)),
+                                        })), i, localPlaylists[0].id, localPlaylists[0].name);
+                                        onClose();
+                                    }}
+                                >
+                                    <div className="w-5 flex-shrink-0 flex items-center justify-center">
+                                        <span className={`text-[10px] group-hover:hidden ${textSec}`}>{i + 1}</span>
+                                        <Play className="w-3 h-3 hidden group-hover:block fill-current" style={{ color: accentPrimary }} />
+                                    </div>
+                                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                                        style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 100%)' }}>
+                                        <HardDrive className="w-3.5 h-3.5 text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0" onClick={e => isLocalRenaming && e.stopPropagation()}>
+                                        {isLocalRenaming ? (
+                                            <input
+                                                autoFocus
+                                                value={renamingTrack.value}
+                                                onChange={e => setRenamingTrack(prev => prev ? { ...prev, value: e.target.value } : null)}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') { e.preventDefault(); void handleRenameTrackSave(); }
+                                                    if (e.key === 'Escape') setRenamingTrack(null);
+                                                }}
+                                                onBlur={() => void handleRenameTrackSave()}
+                                                className={`w-full text-xs px-2 py-1 rounded-lg border outline-none focus:border-indigo-500 ${effectiveDark ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
+                                            />
+                                        ) : (
+                                            <p className={`text-xs font-medium truncate ${textPrimary}`}>{t.title || t.filePath.split(/[\\/]/).pop()}</p>
+                                        )}
+                                    </div>
+                                    {!isLocalRenaming && t.durationSec > 0 && (
+                                        <span className={`text-[10px] flex-shrink-0 group-hover:opacity-0 ${textSec}`}>{fmtDur(t.durationSec)}</span>
+                                    )}
+                                    {!isLocalRenaming && (
+                                        <button
+                                            onClick={e => { e.stopPropagation(); handleRemoveLocalTrack(t.id); }}
+                                            className={`w-5 h-5 rounded flex-shrink-0 items-center justify-center hidden group-hover:flex transition-colors ${effectiveDark ? 'text-slate-400/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-500'}`}
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                        {(!localPlaylists[0] || localPlaylists[0].tracks.length === 0) && !localProcessing && (
+                            <p className={`px-4 pb-3 text-xs ${textMuted}`}>
+                                {isVietnamese ? 'Chưa có file. Nhấn "Files" hoặc "Folder" để thêm.' : 'No files yet. Click "Files" or "Folder" to add.'}
+                            </p>
+                        )}
+                        <div className={`mx-4 mt-1 mb-3 h-px ${effectiveDark ? 'bg-white/[0.06]' : 'bg-slate-200'}`} />
+                    </div>
+                )}
+
                 {playlists.map(pl => {
                     const isExp = expandedPlaylist === pl.id;
                     const trackQ = (plTrackSearch[pl.id] ?? '').toLowerCase();
-                    return (
-                        <div key={pl.id}>
+                    return (                        <div key={pl.id}>
                             {/* Row 1: icon | name / count | publish | play | expand */}
                             <button
                                 onClick={() => setExpandedPlaylist(isExp ? null : pl.id)}
@@ -2175,7 +2302,6 @@ export default function MusicSidebar({
     // ── Tab bar ───────────────────────────────────────────────────────────────
 
     const tabs: { id: Tab; label: string; labelVi: string; icon: React.ReactNode }[] = [
-        { id: 'local', label: 'Local', labelVi: 'Local', icon: <HardDrive className="w-3.5 h-3.5" /> },
         { id: 'playlists', label: 'Playlist', labelVi: 'Playlist', icon: <ListMusic className="w-3.5 h-3.5" /> },
         { id: 'channels', label: 'Channel', labelVi: 'Kênh', icon: <AudioWaveform className="w-3.5 h-3.5" /> },
         { id: 'search', label: 'Search', labelVi: 'Tìm', icon: <Youtube className="w-3.5 h-3.5" /> },
@@ -2274,7 +2400,6 @@ export default function MusicSidebar({
                     {!shortsOpen && activeTab === 'search' && renderSearchTab()}
                     {!shortsOpen && activeTab === 'import' && renderImportTab()}
                     {!shortsOpen && activeTab === 'playlists' && renderPlaylistsTab()}
-                    {!shortsOpen && activeTab === 'local' && renderLocalTab()}
                 </div>
             </div>
 
@@ -2703,11 +2828,23 @@ export default function MusicSidebar({
                                 if (track) { setAddingTrack(track); setPickerOpen(true); }
                                 setContextMenu(null);
                             }}
-                            className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors ${effectiveDark ? 'hover:bg-white/[0.07]' : 'hover:bg-slate-50'}`}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors ${contextMenu.playlistId === 'local_library' ? 'hidden' : ''} ${effectiveDark ? 'hover:bg-white/[0.07]' : 'hover:bg-slate-50'}`}
                         >
                             <Plus className="w-3.5 h-3.5 flex-shrink-0 opacity-70" />
                             {isVietnamese ? 'Thêm vào playlist khác' : 'Add to another playlist'}
                         </button>
+                        {contextMenu.playlistId === 'local_library' && (
+                            <button
+                                onClick={() => {
+                                    handleRemoveLocalTrack(contextMenu.trackId);
+                                    setContextMenu(null);
+                                }}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm text-left transition-colors ${effectiveDark ? 'hover:bg-white/[0.07] text-rose-400' : 'hover:bg-slate-50 text-rose-500'}`}
+                            >
+                                <Trash2 className="w-3.5 h-3.5 flex-shrink-0 opacity-70" />
+                                {isVietnamese ? 'Xóa bài này' : 'Remove track'}
+                            </button>
+                        )}
                     </div>
                 </div>,
                 document.body,

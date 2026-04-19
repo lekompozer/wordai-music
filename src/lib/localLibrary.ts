@@ -124,14 +124,15 @@ export async function pickAudioFolder(): Promise<{ folderName: string; tracks: L
 const VIDEO_EXTENSIONS = ['mp4', 'mov', 'webm', 'mkv', 'm4v'];
 
 async function buildTracksFromPaths(paths: string[]): Promise<LocalTrack[]> {
-    const tracks: LocalTrack[] = [];
-    for (const filePath of paths) {
+    // Build asset URLs + durations in parallel to avoid serial 4s-per-file timeout
+    const results = await Promise.all(paths.map(async (filePath) => {
         const fileName = filePath.split(/[\/]/).pop() ?? filePath;
         const ext = (fileName.split('.').pop() ?? '').toLowerCase();
         const isVideo = VIDEO_EXTENSIONS.includes(ext);
         const assetUrl = await toAssetUrl(filePath);
-        const durationSec = await getAssetDuration(assetUrl);
-        tracks.push({
+        // Skip duration probe for video files — they can take longer and we don't display it
+        const durationSec = isVideo ? 0 : await getAssetDuration(assetUrl);
+        return {
             id: `local_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
             title: nameToTitle(fileName),
             artist: '',
@@ -140,7 +141,7 @@ async function buildTracksFromPaths(paths: string[]): Promise<LocalTrack[]> {
             durationSec,
             isVideo,
             addedAt: Date.now(),
-        });
-    }
-    return tracks;
+        };
+    }));
+    return results;
 }
