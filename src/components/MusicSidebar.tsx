@@ -1691,10 +1691,10 @@ export default function MusicSidebar({
                     <button
                         onClick={() => uploadInputRef.current?.click()}
                         className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold border ${effectiveDark ? 'border-white/15 text-slate-300 hover:bg-white/[0.08]' : 'border-slate-200 text-slate-600 hover:bg-slate-100'}`}
-                        title={isVietnamese ? 'Upload MP3' : 'Upload MP3'}
+                        title={isVietnamese ? 'Upload file nhạc' : 'Upload audio files'}
                     >
                         <Upload className="w-3 h-3" />
-                        MP3
+                        {isVietnamese ? 'Files' : 'Files'}
                     </button>
                     <button
                         onClick={() => setCreatingPlaylist(true)}
@@ -1864,277 +1864,179 @@ export default function MusicSidebar({
                     </div>
                 )}
 
-                {/* ── Local Library section ──────────────────────────────── */}
-                {(typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>).__TAURI_DESKTOP__) && (
-                    <div className="mb-2">
-                        {/* Section header */}
-                        <div className={`flex items-center justify-between px-4 py-2`}>
-                            <div className="flex items-center gap-2">
-                                <HardDrive className={`w-3.5 h-3.5 ${effectiveDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
-                                <span className={`text-[11px] font-semibold uppercase tracking-wider ${textSec}`}>
-                                    {isVietnamese ? 'Nhạc trên máy' : 'Local Files'}
-                                </span>
-                                {localPlaylists[0] && <span className={`text-[10px] ${textMuted}`}>({localPlaylists[0].tracks.length})</span>}
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={handleAddLocalFiles}
-                                    disabled={localProcessing}
-                                    title={isVietnamese ? 'Thêm file' : 'Add files'}
-                                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium border transition-all disabled:opacity-50 ${effectiveDark ? 'border-white/15 text-slate-300 hover:bg-white/[0.08]' : 'border-slate-200 text-slate-600 hover:bg-slate-100'}`}
-                                >
-                                    {localProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <FilePlus2 className="w-3 h-3" />}
-                                    {isVietnamese ? 'File' : 'Files'}
-                                </button>
-                                <button
-                                    onClick={handleAddLocalFolder}
-                                    disabled={localProcessing}
-                                    title={isVietnamese ? 'Mở folder' : 'Add folder'}
-                                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium border transition-all disabled:opacity-50 ${effectiveDark ? 'border-white/15 text-slate-300 hover:bg-white/[0.08]' : 'border-slate-200 text-slate-600 hover:bg-slate-100'}`}
-                                >
-                                    {localProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <FolderOpen className="w-3 h-3" />}
-                                    {isVietnamese ? 'Folder' : 'Folder'}
-                                </button>
-                            </div>
-                        </div>
-                        {localError && <p className="px-4 pb-1 text-xs text-rose-400">{localError}</p>}
-                        {/* Track list */}
-                        {localPlaylists[0] && localPlaylists[0].tracks.map((t, i) => {
-                            const isLocalRenaming = renamingTrack?.trackId === t.id && renamingTrack?.playlistId === 'local_library';
-                            const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'mkv', 'm4v'];
-                            return (
-                                <div
-                                    key={t.id}
-                                    onContextMenu={e => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setContextMenu({ trackId: t.id, playlistId: 'local_library', trackTitle: t.title, x: e.clientX, y: e.clientY });
-                                    }}
-                                    className={`group flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all ${effectiveDark ? 'hover:bg-white/[0.06]' : 'hover:bg-slate-100/80'}`}
-                                    onClick={() => {
-                                        if (isLocalRenaming) return;
-                                        onPlayTracks(localPlaylists[0].tracks.map(tr => ({
-                                            id: tr.id, title: tr.title, artist: tr.artist,
-                                            audioUrl: tr.audioUrl, durationSec: tr.durationSec,
-                                            source: 'local',
-                                            isVideo: tr.isVideo ?? VIDEO_EXTS.some(e => (tr.audioUrl || tr.filePath || '').toLowerCase().endsWith(`.${e}`)),
-                                        })), i, localPlaylists[0].id, localPlaylists[0].name);
-                                        onClose();
-                                    }}
-                                >
-                                    <div className="w-5 flex-shrink-0 flex items-center justify-center">
-                                        <span className={`text-[10px] group-hover:hidden ${textSec}`}>{i + 1}</span>
-                                        <Play className="w-3 h-3 hidden group-hover:block fill-current" style={{ color: accentPrimary }} />
-                                    </div>
-                                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                                        style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 100%)' }}>
-                                        <HardDrive className="w-3.5 h-3.5 text-white" />
-                                    </div>
-                                    <div className="flex-1 min-w-0" onClick={e => isLocalRenaming && e.stopPropagation()}>
-                                        {isLocalRenaming ? (
-                                            <input
-                                                autoFocus
-                                                value={renamingTrack.value}
-                                                onChange={e => setRenamingTrack(prev => prev ? { ...prev, value: e.target.value } : null)}
-                                                onKeyDown={e => {
-                                                    if (e.key === 'Enter') { e.preventDefault(); void handleRenameTrackSave(); }
-                                                    if (e.key === 'Escape') setRenamingTrack(null);
-                                                }}
-                                                onBlur={() => void handleRenameTrackSave()}
-                                                className={`w-full text-xs px-2 py-1 rounded-lg border outline-none focus:border-indigo-500 ${effectiveDark ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
-                                            />
-                                        ) : (
-                                            <p className={`text-xs font-medium truncate ${textPrimary}`}>{t.title || t.filePath.split(/[\\/]/).pop()}</p>
-                                        )}
-                                    </div>
-                                    {!isLocalRenaming && t.durationSec > 0 && (
-                                        <span className={`text-[10px] flex-shrink-0 group-hover:opacity-0 ${textSec}`}>{fmtDur(t.durationSec)}</span>
-                                    )}
-                                    {!isLocalRenaming && (
-                                        <button
-                                            onClick={e => { e.stopPropagation(); handleRemoveLocalTrack(t.id); }}
-                                            className={`w-5 h-5 rounded flex-shrink-0 items-center justify-center hidden group-hover:flex transition-colors ${effectiveDark ? 'text-slate-400/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-500'}`}
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })}
-                        {(!localPlaylists[0] || localPlaylists[0].tracks.length === 0) && !localProcessing && (
-                            <p className={`px-4 pb-3 text-xs ${textMuted}`}>
-                                {isVietnamese ? 'Chưa có file. Nhấn "Files" hoặc "Folder" để thêm.' : 'No files yet. Click "Files" or "Folder" to add.'}
-                            </p>
-                        )}
-                        <div className={`mx-4 mt-1 mb-3 h-px ${effectiveDark ? 'bg-white/[0.06]' : 'bg-slate-200'}`} />
-                    </div>
-                )}
-
                 {playlists.map(pl => {
                     const isExp = expandedPlaylist === pl.id;
                     const trackQ = (plTrackSearch[pl.id] ?? '').toLowerCase();
-                    return (                        <div key={pl.id}>
-                            {/* Row 1: icon | name / count | publish | play | expand */}
-                            <button
-                                onClick={() => setExpandedPlaylist(isExp ? null : pl.id)}
-                                onMouseEnter={e => showHover(e, { name: pl.name, trackCount: pl.tracks.length })}
-                                onMouseLeave={hideHover}
-                                className={`w-full flex items-center gap-3 rounded-2xl px-4 pt-3 pb-1 text-left transition-all ${hoverCls}`}
-                            >
-                                <div className={`w-8 h-8 rounded-2xl flex items-center justify-center flex-shrink-0 ${secondarySurface}`}>
-                                    <ListMusic className="w-4 h-4" style={{ color: accentPrimary }} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className={`text-sm font-medium truncate ${textPrimary}`}>{pl.name}</p>
-                                    <p className={`text-[11px] ${textSec}`}>
-                                        {pl.tracks.length} {isVietnamese ? 'bài' : 'tracks'}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {/* Publish / unpublish channel */}
-                                    {pl.tracks.length > 0 && user && (
-                                        <button
-                                            onClick={e => { e.stopPropagation(); handleTogglePublish(pl); }}
-                                            disabled={publishingId === pl.id}
-                                            title={publishedIds.has(pl.id)
-                                                ? (isVietnamese ? 'Hủy công khai' : 'Unpublish channel')
-                                                : (isVietnamese ? 'Đăng làm kênh công khai' : 'Publish as channel')}
-                                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${publishedIds.has(pl.id)
-                                                ? 'text-indigo-400 bg-indigo-500/15 hover:bg-indigo-500/25'
-                                                : (effectiveDark ? 'text-slate-400/60 hover:text-indigo-300 hover:bg-white/[0.08]' : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100')
-                                                }`}
-                                        >
-                                            {publishingId === pl.id
-                                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                : <Globe className="w-3.5 h-3.5" />
-                                            }
-                                        </button>
-                                    )}
-                                    {pl.tracks.length > 0 && (
-                                        <button
-                                            onClick={e => { e.stopPropagation(); onPlayTracks(pl.tracks, 0, pl.id, pl.name); onClose(); }}
-                                            className="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-[0_10px_20px_rgba(79,70,229,0.24)]"
-                                            style={{ background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' }}
-                                        >
-                                            <Play className="w-3 h-3" fill="currentColor" />
-                                        </button>
-                                    )}
-                                    {pl.tracks.length === 0 && (
-                                        <button
-                                            onClick={e => { e.stopPropagation(); setConfirmDeleteId(pl.id); }}
-                                            title={isVietnamese ? 'Xóa playlist' : 'Delete playlist'}
-                                            className={`w-8 h-8 rounded-full flex items-center justify-center ${effectiveDark ? 'text-slate-400/60 hover:text-rose-300 hover:bg-white/[0.08]' : 'text-slate-400 hover:text-rose-500 hover:bg-slate-100'}`}
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    )}
-                                    {isExp ? <ChevronDown className={`w-4 h-4 ${textSec}`} /> : <ChevronRight className={`w-4 h-4 ${textSec}`} />}
-                                </div>
-                            </button>
-
-                            {/* Row 2: Shuffle toggle + local track search */}
-                            {pl.tracks.length > 0 && (
-                                <div className={`flex items-center gap-2 px-4 pb-2.5`} onClick={e => e.stopPropagation()}>
+                    return (<div key={pl.id}>
+                        {/* Row 1: icon | name / count | publish | play | expand */}
+                        <button
+                            onClick={() => setExpandedPlaylist(isExp ? null : pl.id)}
+                            onMouseEnter={e => showHover(e, { name: pl.name, trackCount: pl.tracks.length })}
+                            onMouseLeave={hideHover}
+                            className={`w-full flex items-center gap-3 rounded-2xl px-4 pt-3 pb-1 text-left transition-all ${hoverCls}`}
+                        >
+                            <div className={`w-8 h-8 rounded-2xl flex items-center justify-center flex-shrink-0 ${secondarySurface}`}>
+                                <ListMusic className="w-4 h-4" style={{ color: accentPrimary }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium truncate ${textPrimary}`}>{pl.name}</p>
+                                <p className={`text-[11px] ${textSec}`}>
+                                    {pl.tracks.length} {isVietnamese ? 'bài' : 'tracks'}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {/* Publish / unpublish channel */}
+                                {pl.tracks.length > 0 && user && (
                                     <button
-                                        onClick={() => onToggleShuffle?.()}
-                                        title={isShuffle ? (isVietnamese ? 'Shuffle đang BẬT' : 'Shuffle ON') : (isVietnamese ? 'Shuffle đang TẮT' : 'Shuffle OFF')}
-                                        className={`flex-shrink-0 flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-semibold transition-colors border ${isShuffle
-                                            ? 'text-indigo-400 bg-indigo-500/15 border-indigo-500/30'
-                                            : (effectiveDark ? 'text-slate-400/70 border-white/10 hover:border-white/20 hover:text-white/70' : 'text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-600')}`}
+                                        onClick={e => { e.stopPropagation(); handleTogglePublish(pl); }}
+                                        disabled={publishingId === pl.id}
+                                        title={publishedIds.has(pl.id)
+                                            ? (isVietnamese ? 'Hủy công khai' : 'Unpublish channel')
+                                            : (isVietnamese ? 'Đăng làm kênh công khai' : 'Publish as channel')}
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${publishedIds.has(pl.id)
+                                            ? 'text-indigo-400 bg-indigo-500/15 hover:bg-indigo-500/25'
+                                            : (effectiveDark ? 'text-slate-400/60 hover:text-indigo-300 hover:bg-white/[0.08]' : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100')
+                                            }`}
                                     >
-                                        <Shuffle className="w-3 h-3" />
-                                        <span>{isVietnamese ? 'Xáo trộn' : 'Shuffle'}</span>
+                                        {publishingId === pl.id
+                                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            : <Globe className="w-3.5 h-3.5" />
+                                        }
                                     </button>
-                                    <div className="relative flex-1">
-                                        <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 ${textSec}`} />
-                                        <input
-                                            type="text"
-                                            value={plTrackSearch[pl.id] ?? ''}
-                                            onChange={e => setPlTrackSearch(prev => ({ ...prev, [pl.id]: e.target.value }))}
-                                            placeholder={isVietnamese ? 'Tìm trong playlist…' : 'Search tracks…'}
-                                            className={`w-full h-7 pl-7 pr-3 rounded-full text-[11px] border outline-none transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 ${inputCls}`}
-                                        />
-                                    </div>
-                                </div>
-                            )}
+                                )}
+                                {pl.tracks.length > 0 && (
+                                    <button
+                                        onClick={e => { e.stopPropagation(); onPlayTracks(pl.tracks, 0, pl.id, pl.name); onClose(); }}
+                                        className="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-[0_10px_20px_rgba(79,70,229,0.24)]"
+                                        style={{ background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' }}
+                                    >
+                                        <Play className="w-3 h-3" fill="currentColor" />
+                                    </button>
+                                )}
+                                {pl.tracks.length === 0 && (
+                                    <button
+                                        onClick={e => { e.stopPropagation(); setConfirmDeleteId(pl.id); }}
+                                        title={isVietnamese ? 'Xóa playlist' : 'Delete playlist'}
+                                        className={`w-8 h-8 rounded-full flex items-center justify-center ${effectiveDark ? 'text-slate-400/60 hover:text-rose-300 hover:bg-white/[0.08]' : 'text-slate-400 hover:text-rose-500 hover:bg-slate-100'}`}
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                )}
+                                {isExp ? <ChevronDown className={`w-4 h-4 ${textSec}`} /> : <ChevronRight className={`w-4 h-4 ${textSec}`} />}
+                            </div>
+                        </button>
 
-                            {isExp && (
-                                <div className="ml-2 mb-1">
-                                    {pl.tracks.length === 0 ? (
-                                        <p className={`px-4 py-3 text-xs ${textSec}`}>
-                                            {isVietnamese ? 'Playlist trống' : 'Empty playlist'}
-                                        </p>
-                                    ) : (
-                                        pl.tracks.filter(t => !trackQ || t.title.toLowerCase().includes(trackQ) || t.artist.toLowerCase().includes(trackQ)).map((t, i) => {
-                                            const origIdx = pl.tracks.findIndex(x => x.id === t.id);
-                                            const isActivePlaying = t.id === currentTrackId;
-                                            const isRenaming = renamingTrack?.trackId === t.id && renamingTrack?.playlistId === pl.id;
-                                            return (
-                                                <div
-                                                    key={t.id}
-                                                    onContextMenu={e => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        setContextMenu({ trackId: t.id, playlistId: pl.id, trackTitle: t.title, x: e.clientX, y: e.clientY });
-                                                    }}
-                                                    className={`group w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer ${isActivePlaying
-                                                        ? (effectiveDark ? 'bg-indigo-500/10' : 'bg-indigo-50')
-                                                        : (effectiveDark ? 'hover:bg-white/[0.07]' : 'hover:bg-slate-100/80')
-                                                        }`}
-                                                    onClick={() => { if (!isRenaming) { onPlayTracks(pl.tracks, origIdx, pl.id, pl.name); onClose(); } }}
-                                                >
-                                                    {/* Track number → play icon on hover, music icon if active */}
-                                                    <div className="w-5 flex-shrink-0 flex items-center justify-center">
-                                                        {isActivePlaying ? (
-                                                            <AudioWaveform className="w-3 h-3" style={{ color: accentPrimary }} />
-                                                        ) : (
-                                                            <>
-                                                                <span className={`text-[10px] group-hover:hidden ${textSec}`}>{i + 1}</span>
-                                                                <Play className="w-3 h-3 hidden group-hover:block fill-current" style={{ color: accentPrimary }} />
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                    {/* Thumbnail if available */}
-                                                    {t.thumbnailUrl && !isRenaming && (
-                                                        // eslint-disable-next-line @next/next/no-img-element
-                                                        <img src={t.thumbnailUrl} alt="" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
-                                                    )}
-                                                    <div className="flex-1 min-w-0" onClick={e => isRenaming && e.stopPropagation()}>
-                                                        {isRenaming ? (
-                                                            <input
-                                                                autoFocus
-                                                                value={renamingTrack.value}
-                                                                onChange={e => setRenamingTrack(prev => prev ? { ...prev, value: e.target.value } : null)}
-                                                                onKeyDown={e => {
-                                                                    if (e.key === 'Enter') { e.preventDefault(); void handleRenameTrackSave(); }
-                                                                    if (e.key === 'Escape') setRenamingTrack(null);
-                                                                }}
-                                                                onBlur={() => void handleRenameTrackSave()}
-                                                                className={`w-full text-xs px-2 py-1 rounded-lg border outline-none focus:border-indigo-500 ${effectiveDark ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
-                                                            />
-                                                        ) : (
-                                                            <>
-                                                                <p className={`text-xs font-medium truncate ${isActivePlaying ? (effectiveDark ? 'text-indigo-300' : 'text-indigo-600') : textPrimary}`}>{t.title}</p>
-                                                                {t.artist && <p className={`text-[10px] truncate ${textSec}`}>{t.artist}</p>}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                    {!isRenaming && <span className={`text-[10px] flex-shrink-0 group-hover:opacity-0 ${textSec}`}>{fmtDur(t.durationSec)}</span>}
-                                                    {!isRenaming && (
-                                                        <button
-                                                            onClick={e => { e.stopPropagation(); void handleRemoveTrackFromPlaylist(pl.id, t.id); }}
-                                                            className={`w-5 h-5 rounded flex-shrink-0 items-center justify-center hidden group-hover:flex transition-colors ${effectiveDark ? 'text-slate-400/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-500'}`}
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
+                        {/* Row 2: Shuffle toggle + local track search */}
+                        {pl.tracks.length > 0 && (
+                            <div className={`flex items-center gap-2 px-4 pb-2.5`} onClick={e => e.stopPropagation()}>
+                                <button
+                                    onClick={() => onToggleShuffle?.()}
+                                    title={isShuffle ? (isVietnamese ? 'Shuffle đang BẬT' : 'Shuffle ON') : (isVietnamese ? 'Shuffle đang TẮT' : 'Shuffle OFF')}
+                                    className={`flex-shrink-0 flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-semibold transition-colors border ${isShuffle
+                                        ? 'text-indigo-400 bg-indigo-500/15 border-indigo-500/30'
+                                        : (effectiveDark ? 'text-slate-400/70 border-white/10 hover:border-white/20 hover:text-white/70' : 'text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-600')}`}
+                                >
+                                    <Shuffle className="w-3 h-3" />
+                                    <span>{isVietnamese ? 'Xáo trộn' : 'Shuffle'}</span>
+                                </button>
+                                <div className="relative flex-1">
+                                    <Search className={`absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 ${textSec}`} />
+                                    <input
+                                        type="text"
+                                        value={plTrackSearch[pl.id] ?? ''}
+                                        onChange={e => setPlTrackSearch(prev => ({ ...prev, [pl.id]: e.target.value }))}
+                                        placeholder={isVietnamese ? 'Tìm trong playlist…' : 'Search tracks…'}
+                                        className={`w-full h-7 pl-7 pr-3 rounded-full text-[11px] border outline-none transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 ${inputCls}`}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {isExp && (
+                            <div className="ml-2 mb-1">
+                                {pl.tracks.length === 0 ? (
+                                    <p className={`px-4 py-3 text-xs ${textSec}`}>
+                                        {isVietnamese ? 'Playlist trống' : 'Empty playlist'}
+                                    </p>
+                                ) : (
+                                    pl.tracks.filter(t => !trackQ || t.title.toLowerCase().includes(trackQ) || t.artist.toLowerCase().includes(trackQ)).map((t, i) => {
+                                        const origIdx = pl.tracks.findIndex(x => x.id === t.id);
+                                        const isActivePlaying = t.id === currentTrackId;
+                                        const isRenaming = renamingTrack?.trackId === t.id && renamingTrack?.playlistId === pl.id;
+                                        return (
+                                            <div
+                                                key={t.id}
+                                                onContextMenu={e => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setContextMenu({ trackId: t.id, playlistId: pl.id, trackTitle: t.title, x: e.clientX, y: e.clientY });
+                                                }}
+                                                className={`group w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-left transition-all cursor-pointer ${isActivePlaying
+                                                    ? (effectiveDark ? 'bg-indigo-500/10' : 'bg-indigo-50')
+                                                    : (effectiveDark ? 'hover:bg-white/[0.07]' : 'hover:bg-slate-100/80')
+                                                    }`}
+                                                onClick={() => { if (!isRenaming) { onPlayTracks(pl.tracks, origIdx, pl.id, pl.name); onClose(); } }}
+                                            >
+                                                {/* Track number → play icon on hover, music icon if active */}
+                                                <div className="w-5 flex-shrink-0 flex items-center justify-center">
+                                                    {isActivePlaying ? (
+                                                        <AudioWaveform className="w-3 h-3" style={{ color: accentPrimary }} />
+                                                    ) : (
+                                                        <>
+                                                            <span className={`text-[10px] group-hover:hidden ${textSec}`}>{i + 1}</span>
+                                                            <Play className="w-3 h-3 hidden group-hover:block fill-current" style={{ color: accentPrimary }} />
+                                                        </>
                                                     )}
                                                 </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                                                {/* Thumbnail if available */}
+                                                {t.thumbnailUrl && !isRenaming && (
+                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                    <img src={t.thumbnailUrl} alt="" className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
+                                                )}
+                                                <div className="flex-1 min-w-0" onClick={e => isRenaming && e.stopPropagation()}>
+                                                    {isRenaming ? (
+                                                        <input
+                                                            autoFocus
+                                                            value={renamingTrack.value}
+                                                            onChange={e => setRenamingTrack(prev => prev ? { ...prev, value: e.target.value } : null)}
+                                                            onKeyDown={e => {
+                                                                if (e.key === 'Enter') { e.preventDefault(); void handleRenameTrackSave(); }
+                                                                if (e.key === 'Escape') setRenamingTrack(null);
+                                                            }}
+                                                            onBlur={() => void handleRenameTrackSave()}
+                                                            className={`w-full text-xs px-2 py-1 rounded-lg border outline-none focus:border-indigo-500 ${effectiveDark ? 'bg-white/10 border-white/20 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
+                                                        />
+                                                    ) : (
+                                                        <>
+                                                            <p className={`text-xs font-medium truncate ${isActivePlaying ? (effectiveDark ? 'text-indigo-300' : 'text-indigo-600') : textPrimary}`}>{t.title}</p>
+                                                            {t.artist && <p className={`text-[10px] truncate ${textSec}`}>{t.artist}</p>}
+                                                        </>
+                                                    )}
+                                                </div>
+                                                {!isRenaming && (() => {
+                                                    const isLocalTrack = t.audioUrl?.startsWith('local:') || t.audioUrl?.startsWith('asset:') || t.source === 'local';
+                                                    return isLocalTrack ? (
+                                                        <span title={isVietnamese ? 'File local' : 'Local file'}>
+                                                            <HardDrive className={`w-3 h-3 flex-shrink-0 ${effectiveDark ? 'text-indigo-400/70' : 'text-indigo-500/70'}`} />
+                                                        </span>
+                                                    ) : null;
+                                                })()}
+                                                {!isRenaming && <span className={`text-[10px] flex-shrink-0 group-hover:opacity-0 ${textSec}`}>{fmtDur(t.durationSec)}</span>}
+                                                {!isRenaming && (
+                                                    <button
+                                                        onClick={e => { e.stopPropagation(); void handleRemoveTrackFromPlaylist(pl.id, t.id); }}
+                                                        className={`w-5 h-5 rounded flex-shrink-0 items-center justify-center hidden group-hover:flex transition-colors ${effectiveDark ? 'text-slate-400/60 hover:text-rose-300' : 'text-slate-400 hover:text-rose-500'}`}
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        )}
+                    </div>
                     );
                 })}
             </div>
