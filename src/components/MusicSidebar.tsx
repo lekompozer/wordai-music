@@ -289,9 +289,10 @@ export default function MusicSidebar({
     const [importedTrackAdded, setImportedTrackAdded] = useState(false);
     const pendingYtId = useRef<string | null>(null);
 
-    // Upload MP3 state
+    // Upload state — Tauri uses path-based flow (uploadFilePaths), web fallback uses File objects (uploadFiles)
     const uploadInputRef = useRef<HTMLInputElement>(null);
     const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+    const [uploadFilePaths, setUploadFilePaths] = useState<string[]>([]);
     const [uploadTargetId, setUploadTargetId] = useState<string>('');
     const [uploadNewName, setUploadNewName] = useState('');
     const [uploadProcessing, setUploadProcessing] = useState(false);
@@ -955,8 +956,30 @@ export default function MusicSidebar({
         }
     };
 
+    // Pick files via Tauri dialog — no R2 upload, copy to app-managed folder per playlist
+    const handlePickFilesForPlaylist = async () => {
+        const isTauri = typeof window !== 'undefined' && !!(window as unknown as Record<string, unknown>).__TAURI_DESKTOP__;
+        if (!isTauri) {
+            uploadInputRef.current?.click();
+            return;
+        }
+        const { open } = await import('@tauri-apps/plugin-dialog');
+        const result = await open({
+            multiple: true,
+            filters: [{ name: 'Audio & Video', extensions: ['mp3', 'flac', 'm4a', 'wav', 'ogg', 'aac', 'opus', 'wma', 'mp4', 'mov', 'webm', 'mkv', 'm4v'] }],
+        });
+        if (!result) return;
+        const paths = Array.isArray(result) ? result : [result];
+        if (paths.length) {
+            setActiveTab('playlists');
+            setUploadFilePaths(paths);
+        }
+    };
+
     const handleConfirmUpload = async () => {
-        if (!uploadFiles.length || uploadProcessing) return;
+        const isPathFlow = uploadFilePaths.length > 0;
+        if (!isPathFlow && !uploadFiles.length) return;
+        if (uploadProcessing) return;
         setUploadProcessing(true);
         setPlaylistError('');
         setUploadProgress(0);
@@ -970,34 +993,62 @@ export default function MusicSidebar({
                 setExpandedPlaylist(created.id);
                 targetId = created.id;
             }
-            const newTracks: MusicPlaylist['tracks'] = [];
-            for (let i = 0; i < uploadFiles.length; i++) {
-                const file = uploadFiles[i];
-                const trackId = `local_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
-                const duration = await extractFileDuration(file);
-                const rawName = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
 
-                // Save blob to IndexedDB on this device — zero network cost, zero server storage
-                await cacheAudioBlob(trackId, file);
-                // Also keep in session cache for instant first play
-                setSessionBlob(trackId, file);
-
-                const track: PlaylistTrack = {
-                    id: trackId,
-                    title: rawName,
-                    artist: '',
-                    audioUrl: `local:${trackId}`,
-                    durationSec: duration,
-                    source: 'local',
-                };
-                await addTrackToMusicPlaylist(targetId, track, /* silent */ true);
-                newTracks.push(track);
-                setUploadProgress(Math.round(((i + 1) / uploadFiles.length) * 100));
+            if (isPathFlow) {
+                // ── Tauri path flow: copy files to app-managed folder ──────────
+                const { invoke } = await import('@tauri-apps/api/core');
+                const { convertFileSrc } = await import('@tauri-apps/api/core');
+                const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'mkv', 'm4v'];
+                const results = await invoke<{ srcPath: string; destPath: string }[]>(
+                    'copy_files_to_playlist_dir',
+                    { playlistId: targetId, filePaths: uploadFilePaths },
+                );
+                for (let i = 0; i < results.length; i++) {
+                    const { destPath } = results[i];
+                    const fileName = destPath.split(/[\/\\]/).pop() ?? destPath;
+                    const ext = (fileName.split('.').pop() ?? '').toLowerCase();
+                    const isVideo = VIDEO_EXTS.includes(ext);
+                    const assetUrl = convertFileSrc(destPath);
+                    const trackId = `local_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+                    const rawName = fileName.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+                    const track: PlaylistTrack = {
+                        id: trackId,
+                        title: rawName,
+                        artist: '',
+                        audioUrl: assetUrl,
+                        durationSec: 0,
+                        source: 'local',
+                        isVideo,
+                    };
+                    await addTrackToMusicPlaylist(targetId, track, /* silent */ true);
+                    setUploadProgress(Math.round(((i + 1) / results.length) * 100));
+                }
+            } else {
+                // ── Web/IndexedDB fallback flow ────────────────────────────────
+                for (let i = 0; i < uploadFiles.length; i++) {
+                    const file = uploadFiles[i];
+                    const trackId = `local_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+                    const duration = await extractFileDuration(file);
+                    const rawName = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+                    await cacheAudioBlob(trackId, file);
+                    setSessionBlob(trackId, file);
+                    const track: PlaylistTrack = {
+                        id: trackId,
+                        title: rawName,
+                        artist: '',
+                        audioUrl: `local:${trackId}`,
+                        durationSec: duration,
+                        source: 'local',
+                    };
+                    await addTrackToMusicPlaylist(targetId, track, /* silent */ true);
+                    setUploadProgress(Math.round(((i + 1) / uploadFiles.length) * 100));
+                }
             }
-            // Emit once after all tracks saved — triggers a single authoritative
-            // re-fetch instead of one partial re-fetch per track (which caused duplicates)
+
+            // Single re-fetch after all tracks saved
             await refreshPlaylists();
             setUploadFiles([]);
+            setUploadFilePaths([]);
             setUploadTargetId('');
             setUploadNewName('');
             setExpandedPlaylist(targetId);
@@ -1011,6 +1062,7 @@ export default function MusicSidebar({
 
     const handleUploadCancel = () => {
         setUploadFiles([]);
+        setUploadFilePaths([]);
         setUploadTargetId('');
         setUploadNewName('');
     };
@@ -1689,9 +1741,9 @@ export default function MusicSidebar({
                 </span>
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => uploadInputRef.current?.click()}
+                        onClick={() => { void handlePickFilesForPlaylist(); }}
                         className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-semibold border ${effectiveDark ? 'border-white/15 text-slate-300 hover:bg-white/[0.08]' : 'border-slate-200 text-slate-600 hover:bg-slate-100'}`}
-                        title={isVietnamese ? 'Upload file nhạc' : 'Upload audio files'}
+                        title={isVietnamese ? 'Thêm file nhạc vào playlist' : 'Add audio files to playlist'}
                     >
                         <Upload className="w-3 h-3" />
                         {isVietnamese ? 'Files' : 'Files'}
@@ -1732,21 +1784,26 @@ export default function MusicSidebar({
                 )}
 
                 {/* Upload review panel */}
-                {uploadFiles.length > 0 && (
+                {(uploadFiles.length > 0 || uploadFilePaths.length > 0) && (() => {
+                    const displayItems: string[] = uploadFilePaths.length > 0
+                        ? uploadFilePaths.map(p => (p.split(/[\/\\]/).pop() ?? p).replace(/\.[^.]+$/, ''))
+                        : uploadFiles.map(f => f.name.replace(/\.[^.]+$/, ''));
+                    const count = displayItems.length;
+                    return (
                     <div className={`mx-2 mt-2 rounded-[24px] p-4 border backdrop-blur-sm ${effectiveDark ? 'bg-indigo-950/60 border-indigo-500/20' : 'bg-indigo-50 border-indigo-200'}`}>
                         <div className="flex items-center gap-2 mb-3">
                             <Upload className="w-3.5 h-3.5 text-indigo-400" />
                             <p className={`text-xs font-semibold ${textPrimary}`}>
-                                {uploadFiles.length} {isVietnamese ? 'file đã chọn' : 'file(s) selected'}
+                                {count} {isVietnamese ? 'file đã chọn' : 'file(s) selected'}
                             </p>
                         </div>
 
                         {/* File list preview */}
                         <div className={`max-h-[80px] overflow-y-auto mb-3 space-y-1 [scrollbar-width:thin] ${effectiveDark ? '[&::-webkit-scrollbar-thumb]:bg-white/20' : '[&::-webkit-scrollbar-thumb]:bg-slate-300'}`}>
-                            {uploadFiles.map((f, i) => (
+                            {displayItems.map((name, i) => (
                                 <div key={i} className={`flex items-center gap-2 text-[11px] ${textSec}`}>
                                     <Music2 className="w-3 h-3 flex-shrink-0 text-indigo-400" />
-                                    <span className="truncate">{f.name.replace(/\.[^.]+$/, '')}</span>
+                                    <span className="truncate">{name}</span>
                                 </div>
                             ))}
                         </div>
@@ -1813,7 +1870,8 @@ export default function MusicSidebar({
                             </button>
                         </div>
                     </div>
-                )}
+                    );
+                })()}
 
                 {playlistError && (
                     <div className={`mx-2 mt-2 rounded-2xl px-4 py-3 text-xs ${effectiveDark ? 'bg-rose-500/10 text-rose-200 border border-rose-400/20' : 'bg-rose-50 text-rose-600 border border-rose-200'}`}>

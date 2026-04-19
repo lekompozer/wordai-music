@@ -55,6 +55,58 @@ fn read_audio_files_in_dir(dir_path: String) -> Result<Vec<serde_json::Value>, S
     Ok(files)
 }
 
+/// Copy a list of files into the app's managed playlists directory.
+/// Creates `{app_data_dir}/playlists/{playlist_id}/` if it doesn't exist.
+/// Returns the destination paths so the caller can build asset:// URLs.
+#[tauri::command]
+async fn copy_files_to_playlist_dir(
+    app: tauri::AppHandle,
+    playlist_id: String,
+    file_paths: Vec<String>,
+) -> Result<Vec<serde_json::Value>, String> {
+    use tauri::Manager;
+    let app_data = app.path().app_data_dir()
+        .map_err(|e| format!("app_data_dir: {e}"))?;
+    let dest_dir = app_data.join("playlists").join(&playlist_id);
+    std::fs::create_dir_all(&dest_dir).map_err(|e| e.to_string())?;
+
+    let mut result = Vec::new();
+    for src in &file_paths {
+        let src_path = std::path::Path::new(src);
+        let file_name = src_path.file_name()
+            .ok_or_else(|| format!("No filename: {src}"))?
+            .to_string_lossy()
+            .to_string();
+
+        // Avoid collisions: if the file already exists, add a numeric suffix
+        let mut dest = dest_dir.join(&file_name);
+        if dest.exists() {
+            let stem = src_path.file_stem().unwrap_or_default().to_string_lossy().to_string();
+            let ext = src_path.extension()
+                .map(|e| e.to_string_lossy().to_string())
+                .unwrap_or_default();
+            let mut counter = 1u32;
+            loop {
+                let new_name = if ext.is_empty() {
+                    format!("{stem}_{counter}")
+                } else {
+                    format!("{stem}_{counter}.{ext}")
+                };
+                dest = dest_dir.join(&new_name);
+                if !dest.exists() { break; }
+                counter += 1;
+            }
+        }
+
+        std::fs::copy(src_path, &dest).map_err(|e| e.to_string())?;
+        result.push(serde_json::json!({
+            "srcPath": src,
+            "destPath": dest.to_string_lossy().to_string(),
+        }));
+    }
+    Ok(result)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = tauri::Builder::default();
@@ -121,6 +173,7 @@ pub fn run() {
             check_for_updates,
             google_auth::open_google_auth,
             read_audio_files_in_dir,
+            copy_files_to_playlist_dir,
         ])
         .run(tauri::generate_context!())
         .expect("error while running WynAI Music");

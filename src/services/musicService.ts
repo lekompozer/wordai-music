@@ -153,6 +153,7 @@ export interface PlaylistTrack {
     tiktokId?: string;
     facebookId?: string;
     facebookIsReel?: boolean;
+    isVideo?: boolean;
 }
 
 export function trackMetaToPlaylist(meta: TrackMeta): PlaylistTrack {
