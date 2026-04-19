@@ -2277,7 +2277,7 @@ export default function MusicSidebar({
                 </div>
 
                 {/* Tab bar */}
-                <div className={`mx-3 mt-2 flex-shrink-0 grid grid-cols-5 gap-1 rounded-[22px] border p-1 ${border} ${elevatedSurface}`} style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+                <div className={`mx-3 mt-2 flex-shrink-0 grid grid-cols-4 gap-1 rounded-[22px] border p-1 ${border} ${elevatedSurface}`} style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
