@@ -1317,7 +1317,7 @@ export default function MusicSidebar({
                             className={`flex-shrink-0 p-1.5 rounded-xl transition-all ${addedYtIds.has(item.youtube_id)
                                 ? 'text-indigo-400 bg-indigo-500/15'
                                 : `opacity-0 group-hover:opacity-100 ${effectiveDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.08]' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`
-                            }`}
+                                }`}
                         >
                             {addedYtIds.has(item.youtube_id)
                                 ? <Check className="w-3.5 h-3.5" />
