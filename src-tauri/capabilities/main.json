@@ -6,7 +6,9 @@
         "main"
     ],
     "remote": {
-        "urls": ["http://localhost:3001/**"]
+        "urls": [
+            "http://localhost:3001/**"
+        ]
     },
     "permissions": [
         "core:default",
