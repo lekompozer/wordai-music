@@ -94,6 +94,8 @@ export interface MusicSidebarProps {
     topOffset?: number;
     onOpenShorts?: () => void;
     isShortsActive?: boolean;
+    onOpenTikTok?: () => void;
+    isTikTokActive?: boolean;
 }
 
 function fmtDur(sec: number): string {
@@ -238,7 +240,7 @@ function saveUserChannels(channels: UserChannel[]) {
 export default function MusicSidebar({
     isOpen, onClose, channels, selectedChannelSlug,
     onSelectChannel, onPlayTracks, onLoadChannelTracks, isDark, isVietnamese, desktopPinned = false, desktopCollapsed = false,
-    currentTrackId, isShuffle = true, onToggleShuffle,
+    currentTrackId, isShuffle = true, onToggleShuffle, onOpenTikTok, isTikTokActive = false,
     leftOffset, topOffset = 0, onOpenShorts, isShortsActive
 }: MusicSidebarProps) {
     const homeSidebarCollapsed = useContext(HomeSidebarCollapsedCtx);
@@ -2518,14 +2520,19 @@ export default function MusicSidebar({
                     <button
                         onMouseDown={e => e.stopPropagation()}
                         onClick={() => {
-                            setTikTokMusicOpen(v => !v);
-                            setShortsOpen(false);
+                            if (onOpenTikTok) {
+                                onOpenTikTok();
+                                if (isMobileViewport) onClose();
+                            } else {
+                                setTikTokMusicOpen(v => !v);
+                                setShortsOpen(false);
+                            }
                         }}
-                        className={`flex items-center justify-center gap-2 rounded-[18px] py-2 text-[11px] font-semibold transition-all ${tikTokMusicOpen
+                        className={`flex items-center justify-center gap-2 rounded-[18px] py-2 text-[11px] font-semibold transition-all ${(isTikTokActive || tikTokMusicOpen)
                             ? 'text-white shadow-[0_12px_24px_rgba(236,72,153,0.24)]'
                             : (effectiveDark ? 'text-slate-300 hover:text-white hover:bg-white/[0.06]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80')
                             }`}
-                        style={tikTokMusicOpen ? { background: 'linear-gradient(135deg, #db2777 0%, #9333ea 100%)', WebkitAppRegion: 'no-drag' } as React.CSSProperties : { border: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}`, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                        style={(isTikTokActive || tikTokMusicOpen) ? { background: 'linear-gradient(135deg, #db2777 0%, #9333ea 100%)', WebkitAppRegion: 'no-drag' } as React.CSSProperties : { border: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}`, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     >
                         <Music2 className="w-3.5 h-3.5" />
                         <span className="truncate">TikTok Music</span>

@@ -12,6 +12,7 @@ import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
 import MusicSidebar, { type SidebarTrack } from './MusicSidebar';
 import dynamic from 'next/dynamic';
 const YoutubeShortsFeedClient = dynamic(() => import('./YoutubeShortsFeedClient'), { ssr: false });
+const TikTokMusicFeedClient = dynamic(() => import('./TikTokMusicFeedClient'), { ssr: false });
 import { getAudioBlob, getSessionBlob, setSessionBlob, cacheAudioBlob } from '@/lib/audioCache';
 import { recordTrackPlay } from '@/services/musicService';
 import {
@@ -1310,7 +1311,7 @@ export default function MusicPlayerClient() {
     // Sidebar
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [subTab, setSubTab] = useState<'library' | 'shorts'>('library');
+    const [subTab, setSubTab] = useState<'library' | 'shorts' | 'tiktok'>('library');
     const [currentPlaylistName, setCurrentPlaylistName] = useState('');
     const [autoplayBlocked, setAutoplayBlocked] = useState(false);
     // Download progress for current track (0-100 while downloading, null otherwise)
@@ -2383,7 +2384,7 @@ export default function MusicPlayerClient() {
     }, []);
 
     useEffect(() => {
-        if (subTab === 'shorts') {
+        if (subTab === 'shorts' || subTab === 'tiktok') {
             setIsPlaying(false);
             stopIframeMedia();
             if (audioRef.current) { audioRef.current.pause(); }
@@ -2586,6 +2587,8 @@ export default function MusicPlayerClient() {
                 onToggleShuffle={() => setIsShuffle(v => { saveShuffleState(!v); return !v; })}
                 onOpenShorts={() => setSubTab('shorts')}
                 isShortsActive={subTab === 'shorts'}
+                onOpenTikTok={() => setSubTab('tiktok')}
+                isTikTokActive={subTab === 'tiktok'}
             />
 
             {subTab === 'shorts' && (
@@ -2602,8 +2605,27 @@ export default function MusicPlayerClient() {
                 </div>
             )}
 
+            {subTab === 'tiktok' && (
+                <div className="fixed bottom-0 z-[200] bg-[#06060f]" style={{ left: sidebarCollapsed ? 0 : 320, top: 72, right: 0 }}>
+                    {/* Back button */}
+                    <button
+                        onClick={() => setSubTab('library')}
+                        className="absolute top-4 right-4 z-[60] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white/80 text-xs font-medium hover:bg-white/10 transition-colors"
+                        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                    >
+                        ✕ {isVietnamese ? 'Đóng' : 'Close'}
+                    </button>
+                    <TikTokMusicFeedClient
+                        isVietnamese={isVietnamese}
+                        isDark={isDark}
+                        playlistOptions={playlistOptions}
+                        onPlaylistsChanged={syncRemotePlaylists}
+                    />
+                </div>
+            )}
+
             {/* Sidebar collapse toggle — floats at the top-left of the main content area */}
-            {subTab !== 'shorts' && (
+            {subTab === 'library' && (
                 <button
                     onClick={() => setSidebarCollapsed(v => !v)}
                     className="fixed z-[401] flex items-center justify-center w-7 h-7 rounded-lg bg-black/40 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
@@ -2615,7 +2637,7 @@ export default function MusicPlayerClient() {
             )}
 
             {/* Main content wrapper: music sidebar (320 px default) on lg+, track list (256 px) on xl+ */}
-            <div className={`h-full flex ${sidebarCollapsed ? '' : 'lg:pl-[320px]'} ${subTab === 'shorts' ? 'hidden' : ''}`}>
+            <div className={`h-full flex ${sidebarCollapsed ? '' : 'lg:pl-[320px]'} ${subTab !== 'library' ? 'hidden' : ''}`}>
 
                 {/* Scrollable feed */}
                 <div
