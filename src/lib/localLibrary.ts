@@ -16,6 +16,7 @@ export interface LocalTrack {
     filePath: string;        // original absolute path for display
     audioUrl: string;        // asset:// URL for playback
     durationSec: number;
+    isVideo: boolean;        // true for mp4/mov/webm/mkv/m4v files
     addedAt: number;
 }
 
@@ -107,10 +108,14 @@ export async function pickAudioFolder(): Promise<{ folderName: string; tracks: L
     return { folderName, tracks };
 }
 
+const VIDEO_EXTENSIONS = ['mp4', 'mov', 'webm', 'mkv', 'm4v'];
+
 async function buildTracksFromPaths(paths: string[]): Promise<LocalTrack[]> {
     const tracks: LocalTrack[] = [];
     for (const filePath of paths) {
-        const fileName = filePath.split(/[\\/]/).pop() ?? filePath;
+        const fileName = filePath.split(/[\/]/).pop() ?? filePath;
+        const ext = (fileName.split('.').pop() ?? '').toLowerCase();
+        const isVideo = VIDEO_EXTENSIONS.includes(ext);
         const assetUrl = await toAssetUrl(filePath);
         const durationSec = await getAssetDuration(assetUrl);
         tracks.push({
@@ -120,6 +125,7 @@ async function buildTracksFromPaths(paths: string[]): Promise<LocalTrack[]> {
             filePath,
             audioUrl: assetUrl,
             durationSec,
+            isVideo,
             addedAt: Date.now(),
         });
     }

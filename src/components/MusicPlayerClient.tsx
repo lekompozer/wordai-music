@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import {
     Music2, Heart, Bookmark, BookmarkCheck, Share2,
     Volume2, VolumeX, ChevronRight, Play, Pause, Menu, Plus, X, ListMusic, Shuffle,
-    Maximize2, Minimize2, HardDrive, PanelLeftOpen, PanelLeftClose,
+    Maximize2, Minimize2, HardDrive, PanelLeftOpen, PanelLeftClose, Rewind,
 } from 'lucide-react';
 import { useTheme, useLanguage } from '@/contexts/AppContext';
 import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
@@ -219,6 +219,7 @@ interface Track {
     tiktokId?: string;
     facebookId?: string;
     facebookIsReel?: boolean; // true = portrait reel (fbreel: prefix), false/undefined = landscape video (fb: prefix)
+    isVideo?: boolean;        // true for local mp4/mov/webm files
 }
 
 interface SlideTrack extends Track {
@@ -863,7 +864,7 @@ function MusicSlide({
 
     return (
         <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden select-none"
-            style={{ background: (track.youtubeId || track.facebookId) && isActive ? '#000000' : trackTheme.background }}>
+            style={{ background: (track.youtubeId || track.facebookId || track.isVideo) && isActive ? '#000000' : trackTheme.background }}>
 
             {/* Ambient pulse rings */}
             {isActive && (
@@ -907,6 +908,9 @@ function MusicSlide({
             ) : track.facebookId ? (
                 /* Facebook: global desktop iframe in MusicPlayerClient overlays this — empty placeholder */
                 <div className="absolute inset-0 bottom-[130px] z-10 pointer-events-none" />
+            ) : track.isVideo ? (
+                /* Local video — fixed <video> overlay in MusicPlayerClient sits on top */
+                <div className="absolute inset-0 bottom-[130px] z-10 pointer-events-none" />
             ) : track.tiktokId ? (
                 /* TikTok embed — overflow-hidden clips the TikTok footer bar */
                 <div
@@ -930,10 +934,12 @@ function MusicSlide({
                 </div>
             )}
 
-            {/* Audio visualizer — hidden for YouTube/TikTok/Facebook tracks */}
-            {!track.youtubeId && !track.tiktokId && !track.facebookId && (
+            {/* Audio visualizer — hidden for YouTube/TikTok/Facebook/localVideo tracks.
+                 Also skipped for asset:// tracks (createMediaElementSource is blocked for asset:// in WKWebView,
+                 which silently reroutes audio through a CORS-denied WebAudio graph → audio goes silent) */}
+            {!track.youtubeId && !track.tiktokId && !track.facebookId && !track.isVideo && (
                 <div className="absolute bottom-[176px] inset-x-0 h-[80px] md:h-[120px] z-[5] pointer-events-none">
-                    {isActive && audioEl
+                    {isActive && audioEl && !track.audioUrl?.startsWith('asset:')
                         ? <AudioVisualizer audioEl={audioEl} accent={trackTheme.accent} />
                         : <div className="flex h-full items-end justify-center pb-4">
                             <SoundBars playing={isActive && isPlaying} />
@@ -985,6 +991,16 @@ function MusicSlide({
                 {/* Progress bar + inline volume — hidden for YouTube/Facebook/TikTok embed tracks */}
                 {!track.youtubeId && !track.tiktokId && !track.facebookId && (
                     <div className="mt-3 flex items-center gap-1.5">
+                        {/* -10s rewind button — shown when duration is known */}
+                        {downloadProgress === null && duration > 0 && (
+                            <button
+                                onClick={e => { e.stopPropagation(); onSeek(Math.max(0, currentTime - 10)); }}
+                                className="flex-shrink-0 text-white/60 hover:text-white transition-colors"
+                                title="-10s"
+                            >
+                                <Rewind className="w-3.5 h-3.5" />
+                            </button>
+                        )}
                         {/* Download progress bar — shown while the track blob is being fetched */}
                         {downloadProgress !== null ? (
                             <div className="flex-1 flex flex-col gap-1">
@@ -1345,6 +1361,8 @@ export default function MusicPlayerClient() {
     const desktopFbEndedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const localVideoRef = useRef<HTMLVideoElement | null>(null); // for local asset:// video files
+    const [localVideoVisible, setLocalVideoVisible] = useState(false);
     const fadingOutRef = useRef<HTMLAudioElement | null>(null); // holds audio being faded out during crossfade
     const crossfadeAdvanceRef = useRef(false); // true when next track should fade in
     const feedRef = useRef<HTMLDivElement>(null);
@@ -1671,10 +1689,57 @@ export default function MusicPlayerClient() {
         // YouTube/TikTok/Facebook embed tracks: pause audio but keep the element alive
         if (useEmbedPath) {
             if (audio) { audio.pause(); audio.src = ''; }
+            setLocalVideoVisible(false);
             setCurrentTime(0);
             setDuration(track.durationSec || 0);
             return;
         }
+
+        // ── Local asset:// video file (mp4/mov/webm) ─────────────────────────────
+        // Use the always-present <video> element instead of <audio>.
+        // The AudioVisualizer is skipped for asset:// tracks (createMediaElementSource
+        // is blocked by WKWebView CORS for asset:// → audio silenced if we try it).
+        if (track.isVideo && track.audioUrl.startsWith('asset:')) {
+            if (audio) { audio.pause(); audio.src = ''; }
+            setLocalVideoVisible(true);
+            setAudioEl(null); // no visualizer for video tracks
+
+            let cancelledVideo = false;
+            const initVideo = async () => {
+                const video = localVideoRef.current;
+                if (!video || cancelledVideo) return;
+
+                video.volume = volume;
+                video.ontimeupdate = () => { if (!cancelledVideo) setCurrentTime(video.currentTime); };
+                video.onloadedmetadata = () => { if (!cancelledVideo) setDuration(video.duration || 0); };
+                video.onended = () => {
+                    if (!cancelledVideo) { recordTrackPlay(track.id); advanceToNext(); }
+                };
+                video.onerror = () => {
+                    if (video.src && video.src !== window.location.href && !cancelledVideo) advanceToNext();
+                };
+                video.onplaying = () => { if (!cancelledVideo) setAutoplayBlocked(false); };
+
+                video.src = track.audioUrl;
+                video.load();
+                setCurrentTime(0);
+                setDuration(0);
+
+                if (isPlaying) {
+                    void video.play()
+                        .then(() => setAutoplayBlocked(false))
+                        .catch((err: unknown) => {
+                            const name = (err as { name?: string })?.name;
+                            if (name === 'NotAllowedError') setAutoplayBlocked(true);
+                        });
+                }
+            };
+            void initVideo();
+            return () => { cancelledVideo = true; };
+        }
+
+        // For non-video tracks, hide local video overlay
+        setLocalVideoVisible(false);
 
         // Stop current playback (but keep the element)
         if (audio) { audio.pause(); }
@@ -1868,6 +1933,7 @@ export default function MusicPlayerClient() {
     // Sync volume
     useEffect(() => {
         if (audioRef.current) audioRef.current.volume = volume;
+        if (localVideoRef.current) localVideoRef.current.volume = volume;
     }, [volume]);
 
     // ── Background pre-fetch: download ALL audio tracks in current playlist/channel ───────────
@@ -1929,6 +1995,23 @@ export default function MusicPlayerClient() {
     // Sync play/pause. Call play() directly without waiting for AudioContext —
     // ctx.resume().then() is async and WKWebView may revoke autoplay permission in that gap.
     useEffect(() => {
+        // Local video track: control the video element
+        const activeTrack = slides[activeIndex];
+        if (activeTrack?.isVideo && activeTrack.audioUrl?.startsWith('asset:') && localVideoRef.current) {
+            const v = localVideoRef.current;
+            if (isPlaying) {
+                void v.play()
+                    .then(() => setAutoplayBlocked(false))
+                    .catch((err: unknown) => {
+                        const name = (err as { name?: string })?.name;
+                        if (name === 'NotAllowedError') setAutoplayBlocked(true);
+                    });
+            } else {
+                v.pause();
+            }
+            return;
+        }
+        // Normal audio
         const a = audioRef.current;
         if (!a) return;
         if (isPlaying) {
@@ -2337,11 +2420,15 @@ export default function MusicPlayerClient() {
     }, [syncRemotePlaylists]);
 
     const handleSeek = useCallback((time: number) => {
-        if (audioRef.current) {
+        const activeTrack = slides[activeIndex];
+        if (activeTrack?.isVideo && activeTrack.audioUrl?.startsWith('asset:') && localVideoRef.current) {
+            localVideoRef.current.currentTime = time;
+            setCurrentTime(time);
+        } else if (audioRef.current) {
             audioRef.current.currentTime = time;
             setCurrentTime(time);
         }
-    }, []);
+    }, [slides, activeIndex]);
 
     const handleShare = useCallback(() => {
         const track = slides[activeIndex];
@@ -2395,6 +2482,7 @@ export default function MusicPlayerClient() {
             tiktokId: t.tiktokId,
             facebookId: t.facebookId,
             facebookIsReel: t.facebookId ? (t.audioUrl.startsWith('fbreel:') ? true : undefined) : undefined,
+            isVideo: t.isVideo,
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: orderedTracks.slice(0, 50) });
 
@@ -2751,13 +2839,45 @@ export default function MusicPlayerClient() {
                 </div>
             )}
 
+            {/* Global Desktop Local Video — always in DOM so localVideoRef is set on mount.
+                Hidden when not active via opacity/pointer-events. Positioned over the card
+                exactly like the YouTube overlay (88px below card top, above bottom controls). */}
+            <video
+                ref={localVideoRef}
+                playsInline
+                className="transition-opacity duration-300"
+                style={desktopCardRect ? {
+                    position: 'fixed',
+                    left: desktopCardRect.left,
+                    top: desktopCardRect.top + 88,
+                    width: desktopCardRect.width,
+                    height: Math.max(0, desktopCardRect.height - 88 - 130),
+                    objectFit: 'contain',
+                    background: '#000',
+                    zIndex: 20,
+                    opacity: localVideoVisible && activeSlide?.isVideo ? 1 : 0,
+                    pointerEvents: localVideoVisible && activeSlide?.isVideo ? 'auto' : 'none',
+                } : {
+                    position: 'fixed',
+                    width: 0,
+                    height: 0,
+                    opacity: 0,
+                    pointerEvents: 'none',
+                }}
+            />
+
             {/* Mobile tap-to-unmute hint */}
             {autoplayBlocked && (
                 <div
                     className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[9990] lg:hidden pointer-events-auto"
                     onClick={() => {
                         setIsPlaying(true);
-                        audioRef.current?.play().then(() => setAutoplayBlocked(false)).catch(() => null);
+                        const activeTrack = slides[activeIndex];
+                        if (activeTrack?.isVideo && localVideoRef.current) {
+                            localVideoRef.current.play().then(() => setAutoplayBlocked(false)).catch(() => null);
+                        } else {
+                            audioRef.current?.play().then(() => setAutoplayBlocked(false)).catch(() => null);
+                        }
                     }}
                 >
                     <div className="flex items-center gap-2 rounded-full bg-black/70 backdrop-blur-md px-5 py-2.5 text-white text-sm font-medium shadow-xl ring-1 ring-white/10 cursor-pointer active:scale-95 transition-transform">

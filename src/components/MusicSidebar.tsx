@@ -65,6 +65,7 @@ export interface SidebarTrack {
     tiktokId?: string;
     facebookId?: string;
     facebookIsReel?: boolean;
+    isVideo?: boolean;
 }
 
 export interface MusicSidebarProps {
@@ -2142,6 +2143,7 @@ export default function MusicSidebar({
                                             id: tr.id, title: tr.title, artist: tr.artist,
                                             audioUrl: tr.audioUrl, durationSec: tr.durationSec,
                                             source: 'local',
+                                            isVideo: tr.isVideo,
                                         })), i, localPlaylists[0].id, localPlaylists[0].name);
                                         onClose();
                                     }}

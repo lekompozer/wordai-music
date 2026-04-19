@@ -19,6 +19,9 @@
         "core:window:allow-start-dragging",
         "shell:allow-open",
         "updater:default",
-        "dialog:allow-open"
+        "dialog:allow-open",
+        "fs:allow-read-file",
+        "fs:allow-read-dir",
+        "core:asset:allow-fetch-asset"
     ]
 }
