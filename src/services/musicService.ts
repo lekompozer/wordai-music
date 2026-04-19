@@ -47,7 +47,7 @@ export interface TrackMeta {
  */
 export async function searchYouTube(q: string, limit = 10): Promise<YTSearchResult[]> {
     const token = await getToken();
-    const res = await fetch(`${MUSIC_BASE}/search?q=${encodeURIComponent(q)}&limit=${limit}`, {
+    const res = await fetch(`${MUSIC_BASE}/search?q=${encodeURIComponent(q)}&limit=${limit}&_t=${Date.now()}`, {
         headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) {

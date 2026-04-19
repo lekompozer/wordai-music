@@ -1506,19 +1506,8 @@ export default function MusicSidebar({
                 </div>
                 {ytError && (
                     <div className={`mt-2 rounded-2xl px-3 py-3 text-xs border ${effectiveDark ? 'bg-amber-500/10 border-amber-400/20 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
-                        <p className="font-semibold mb-1">⚠️ {isVietnamese ? 'Không thể tải bài hát này' : 'Could not download this track'}</p>
-                        <p className="leading-relaxed">
-                            {isVietnamese
-                                ? 'Không phải bài hát nào cũng tải được. Bạn có thể tải thủ công tại '
-                                : "Not all tracks can be downloaded. You can get it manually at "}
-                            <a
-                                href="https://v1.y2mate.nu/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="underline font-semibold hover:opacity-80"
-                            >v1.y2mate.nu</a>
-                            {isVietnamese ? ', sau đó upload file MP3 vào playlist.' : ', then upload the MP3 file into your playlist.'}
-                        </p>
+                        <p className="font-semibold mb-1">⚠️ {isVietnamese ? 'Tìm kiếm thất bại' : 'Search failed'}</p>
+                        <p className="leading-relaxed">{ytError}</p>
                     </div>
                 )}
             </div>
