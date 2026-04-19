@@ -415,7 +415,7 @@ export default function MusicSidebar({
         } finally {
             setTikTokLoading(false);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -1427,7 +1427,7 @@ export default function MusicSidebar({
                                 ? <img src={track.thumbnailUrl} alt="" className="w-full h-full object-cover" />
                                 : <div className="w-full h-full flex items-center justify-center">
                                     <Music2 className={`w-4 h-4 ${textMuted}`} />
-                                  </div>
+                                </div>
                             }
                             <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Play className="w-3 h-3 text-white" fill="currentColor" />
