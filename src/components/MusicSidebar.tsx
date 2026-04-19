@@ -364,6 +364,66 @@ export default function MusicSidebar({
     const [shortsItems, setShortsItems] = useState<Array<{ youtube_id: string; title: string; channel: string; thumbnail: string; duration_sec: number }>>([]);
     const [shortsLoading, setShortsLoading] = useState(false);
 
+    // ── TikTok Music tab state ────────────────────────────────────────────────
+    const [tikTokMusicOpen, setTikTokMusicOpen] = useState(false);
+    const [tikTokTracks, setTikTokTracks] = useState<SidebarTrack[]>([]);
+    const [tikTokLoading, setTikTokLoading] = useState(false);
+
+    const TIKTOK_MUSIC_FILES = ['nhacviet-tiktok', 'nhac-soi-dong', 'background-music', 'nhac-en-chill', 'rap-tiktok'];
+    const TIKTOK_SEEN_KEY = 'wordai-music-tiktok-seen';
+
+    const loadTikTokMusicTracks = useCallback(async () => {
+        if (tikTokLoading) return;
+        setTikTokLoading(true);
+        try {
+            let seenIds: Set<string>;
+            try { seenIds = new Set(JSON.parse(localStorage.getItem(TIKTOK_SEEN_KEY) ?? '[]') as string[]); }
+            catch { seenIds = new Set(); }
+
+            const allTracks: SidebarTrack[] = [];
+            for (const slug of TIKTOK_MUSIC_FILES) {
+                try {
+                    const res = await fetch(`/data/music/${slug}.json`);
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    const tracks: Array<{ id: string; title?: string; artist?: string; audioUrl: string; coverUrl?: string; durationSec?: number }> = data.tracks ?? [];
+                    for (const t of tracks) {
+                        allTracks.push({
+                            id: t.id,
+                            title: t.title || '',
+                            artist: t.artist || '',
+                            audioUrl: t.audioUrl,
+                            durationSec: t.durationSec ?? 0,
+                            source: 'tiktok',
+                            thumbnailUrl: t.coverUrl,
+                        });
+                    }
+                } catch { /* skip */ }
+            }
+
+            let unseen = allTracks.filter(t => !seenIds.has(t.id));
+            if (unseen.length < 20 && allTracks.length > 0) {
+                localStorage.removeItem(TIKTOK_SEEN_KEY);
+                unseen = allTracks;
+            }
+            // Fisher-Yates shuffle
+            for (let i = unseen.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [unseen[i], unseen[j]] = [unseen[j], unseen[i]];
+            }
+            setTikTokTracks(unseen.slice(0, 80));
+        } finally {
+            setTikTokLoading(false);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (tikTokMusicOpen && tikTokTracks.length === 0 && !tikTokLoading) {
+            loadTikTokMusicTracks();
+        }
+    }, [tikTokMusicOpen, tikTokTracks.length, tikTokLoading, loadTikTokMusicTracks]);
+
     // ── Resizable sidebar ─────────────────────────────────────────────────────
     const [sidebarWidth, setSidebarWidth] = useState(320);
     const isResizing = useRef(false);
@@ -1323,6 +1383,81 @@ export default function MusicSidebar({
                                 ? <Check className="w-3.5 h-3.5" />
                                 : <ListMusic className="w-3.5 h-3.5" />
                             }
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+
+    // ── TikTok Music For You tab ──────────────────────────────────────────────
+    const renderTikTokMusicTab = () => (
+        <div className="flex flex-col flex-1 overflow-hidden">
+            {/* Refresh button */}
+            <div className="px-3 pt-2 pb-1 flex-shrink-0 flex items-center justify-between">
+                <span className={`text-xs font-semibold ${textSec}`}>{isVietnamese ? 'Nhạc TikTok' : 'TikTok Music'} · {tikTokTracks.length}</span>
+                <button
+                    onClick={() => { setTikTokTracks([]); loadTikTokMusicTracks(); }}
+                    className={`p-1.5 rounded-xl text-xs transition-colors ${effectiveDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.08]' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                    title={isVietnamese ? 'Trộn lại' : 'Shuffle again'}
+                >
+                    <Shuffle className="w-3.5 h-3.5" />
+                </button>
+            </div>
+            <div className={`flex-1 overflow-y-auto px-2 py-1 [scrollbar-width:auto] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full ${effectiveDark ? '[&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/12' : '[&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300/80'}`}>
+                {tikTokLoading && (
+                    <div className="flex justify-center py-12">
+                        <Loader2 className={`w-6 h-6 animate-spin ${effectiveDark ? 'text-white/40' : 'text-slate-400'}`} />
+                    </div>
+                )}
+                {!tikTokLoading && tikTokTracks.length === 0 && (
+                    <div className="py-12 text-center px-4">
+                        <Music2 className={`w-10 h-10 mx-auto mb-3 ${textMuted}`} />
+                        <p className={`text-sm ${textSec}`}>{isVietnamese ? 'Không tải được nhạc.' : 'Could not load music.'}</p>
+                    </div>
+                )}
+                {!tikTokLoading && tikTokTracks.map((track, idx) => (
+                    <div key={track.id} className={`group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-all ${hoverCls}`}>
+                        {/* Cover */}
+                        <button
+                            className="relative w-10 h-10 rounded-xl overflow-hidden flex-shrink-0 bg-gray-800"
+                            onClick={() => onPlayTracks(tikTokTracks, idx)}
+                        >
+                            {track.thumbnailUrl
+                                ? <img src={track.thumbnailUrl} alt="" className="w-full h-full object-cover" />
+                                : <div className="w-full h-full flex items-center justify-center">
+                                    <Music2 className={`w-4 h-4 ${textMuted}`} />
+                                  </div>
+                            }
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Play className="w-3 h-3 text-white" fill="currentColor" />
+                            </div>
+                        </button>
+                        {/* Title */}
+                        <button className="flex-1 min-w-0 text-left" onClick={() => onPlayTracks(tikTokTracks, idx)}>
+                            <p className={`text-xs font-medium truncate ${textPrimary}`}>{track.title || (isVietnamese ? 'Nhạc TikTok' : 'TikTok Music')}</p>
+                            <p className={`text-[10px] mt-0.5 truncate ${textSec}`}>{track.artist || '—'}</p>
+                        </button>
+                        {/* Save */}
+                        <button
+                            onClick={e => {
+                                e.stopPropagation();
+                                const t: PlaylistTrack = {
+                                    id: track.id,
+                                    title: track.title || (isVietnamese ? 'Nhạc TikTok' : 'TikTok Music'),
+                                    artist: track.artist || '',
+                                    audioUrl: track.audioUrl,
+                                    durationSec: track.durationSec,
+                                    source: 'tiktok',
+                                    thumbnailUrl: track.thumbnailUrl,
+                                };
+                                setAddingTrack(t);
+                                setPickerOpen(true);
+                            }}
+                            title={isVietnamese ? 'Lưu vào playlist' : 'Save to playlist'}
+                            className={`flex-shrink-0 p-1.5 rounded-xl opacity-0 group-hover:opacity-100 transition-all ${effectiveDark ? 'text-slate-400 hover:text-white hover:bg-white/[0.08]' : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'}`}
+                        >
+                            <ListMusic className="w-3.5 h-3.5" />
                         </button>
                     </div>
                 ))}
@@ -2358,8 +2493,8 @@ export default function MusicSidebar({
                     </div>
                 </div>
 
-                {/* Shorts button — wide, above tabs */}
-                <div className="mx-3 mt-3 flex-shrink-0" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+                {/* Shorts + TikTok Music buttons — above tabs */}
+                <div className="mx-3 mt-3 flex-shrink-0 grid grid-cols-2 gap-2" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
                     <button
                         onMouseDown={e => e.stopPropagation()}
                         onClick={() => {
@@ -2368,16 +2503,32 @@ export default function MusicSidebar({
                                 if (isMobileViewport) onClose();
                             } else {
                                 setShortsOpen(v => !v);
+                                setTikTokMusicOpen(false);
                             }
                         }}
-                        className={`w-full flex items-center justify-center gap-2 rounded-[18px] py-2 text-[11px] font-semibold transition-all ${(isShortsActive || shortsOpen)
+                        className={`flex items-center justify-center gap-2 rounded-[18px] py-2 text-[11px] font-semibold transition-all ${(isShortsActive || shortsOpen)
                             ? 'text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]'
                             : (effectiveDark ? 'text-slate-300 hover:text-white hover:bg-white/[0.06]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80')
                             }`}
                         style={(isShortsActive || shortsOpen) ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)', WebkitAppRegion: 'no-drag' } as React.CSSProperties : { border: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}`, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     >
                         <PlayCircle className="w-3.5 h-3.5" />
-                        {isVietnamese ? '▶ Shorts / Trending' : '▶ Shorts / Trending'}
+                        <span className="truncate">Shorts</span>
+                    </button>
+                    <button
+                        onMouseDown={e => e.stopPropagation()}
+                        onClick={() => {
+                            setTikTokMusicOpen(v => !v);
+                            setShortsOpen(false);
+                        }}
+                        className={`flex items-center justify-center gap-2 rounded-[18px] py-2 text-[11px] font-semibold transition-all ${tikTokMusicOpen
+                            ? 'text-white shadow-[0_12px_24px_rgba(236,72,153,0.24)]'
+                            : (effectiveDark ? 'text-slate-300 hover:text-white hover:bg-white/[0.06]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80')
+                            }`}
+                        style={tikTokMusicOpen ? { background: 'linear-gradient(135deg, #db2777 0%, #9333ea 100%)', WebkitAppRegion: 'no-drag' } as React.CSSProperties : { border: `1px solid ${effectiveDark ? 'rgba(255,255,255,0.1)' : 'rgba(203,213,225,0.8)'}`, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                    >
+                        <Music2 className="w-3.5 h-3.5" />
+                        <span className="truncate">TikTok Music</span>
                     </button>
                 </div>
 
@@ -2387,12 +2538,12 @@ export default function MusicSidebar({
                         <button
                             key={tab.id}
                             onMouseDown={e => e.stopPropagation()}
-                            onClick={() => { setActiveTab(tab.id); setShortsOpen(false); }}
-                            className={`flex flex-col items-center gap-1 rounded-[18px] py-2.5 text-[9px] font-semibold transition-all ${activeTab === tab.id && !shortsOpen
+                            onClick={() => { setActiveTab(tab.id); setShortsOpen(false); setTikTokMusicOpen(false); }}
+                            className={`flex flex-col items-center gap-1 rounded-[18px] py-2.5 text-[9px] font-semibold transition-all ${activeTab === tab.id && !shortsOpen && !tikTokMusicOpen
                                 ? 'text-white shadow-[0_12px_24px_rgba(79,70,229,0.24)]'
                                 : `${textSec} ${effectiveDark ? 'hover:text-white hover:bg-white/[0.06]' : 'hover:text-slate-700 hover:bg-slate-100/80'}`
                                 }`}
-                            style={activeTab === tab.id && !shortsOpen ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)', WebkitAppRegion: 'no-drag' } as React.CSSProperties : { WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                            style={activeTab === tab.id && !shortsOpen && !tikTokMusicOpen ? { background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)', WebkitAppRegion: 'no-drag' } as React.CSSProperties : { WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                         >
                             {tab.icon}
                             {isVietnamese ? tab.labelVi : tab.label}
@@ -2403,10 +2554,11 @@ export default function MusicSidebar({
                 {/* Tab content */}
                 <div className="flex-1 min-h-0 flex flex-col overflow-hidden pt-3">
                     {shortsOpen && renderShortsTab()}
-                    {!shortsOpen && activeTab === 'channels' && renderChannelsTab()}
-                    {!shortsOpen && activeTab === 'search' && renderSearchTab()}
-                    {!shortsOpen && activeTab === 'import' && renderImportTab()}
-                    {!shortsOpen && activeTab === 'playlists' && renderPlaylistsTab()}
+                    {tikTokMusicOpen && !shortsOpen && renderTikTokMusicTab()}
+                    {!shortsOpen && !tikTokMusicOpen && activeTab === 'channels' && renderChannelsTab()}
+                    {!shortsOpen && !tikTokMusicOpen && activeTab === 'search' && renderSearchTab()}
+                    {!shortsOpen && !tikTokMusicOpen && activeTab === 'import' && renderImportTab()}
+                    {!shortsOpen && !tikTokMusicOpen && activeTab === 'playlists' && renderPlaylistsTab()}
                 </div>
             </div>
 

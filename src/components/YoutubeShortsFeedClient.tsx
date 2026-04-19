@@ -146,6 +146,7 @@ export default function YoutubeShortsFeedClient() {
                 onLoadMore={handleLoadMore}
                 onVideoWatched={handleVideoWatched}
                 onActiveIndexChange={handleActiveIndexChange}
+                showControls={true}
             />
         </div>
     );
