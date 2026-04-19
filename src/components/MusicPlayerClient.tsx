@@ -943,7 +943,7 @@ function MusicSlide({
                         ? <AudioVisualizer audioEl={audioEl} accent={trackTheme.accent} />
                         : <div className="flex h-full items-end justify-center pb-4">
                             <SoundBars playing={isActive && isPlaying} />
-                          </div>
+                        </div>
                     }
                 </div>
             )}
