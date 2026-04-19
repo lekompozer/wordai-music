@@ -11,7 +11,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
     Volume2, VolumeX, ChevronUp, ChevronDown,
-    Loader2, Bookmark, BookmarkCheck, Check,
+    Loader2, Bookmark, BookmarkCheck, Check, Music2, Play, Pause,
 } from 'lucide-react';
 import { getMusicPlaylists, addTrackToMusicPlaylist } from '@/services/musicPlaylistService';
 import type { MusicPlaylist } from '@/services/musicPlaylistService';
@@ -38,12 +38,12 @@ export interface TikTokVideoFeedClientProps {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const CHANNEL_FILES: { slug: string; name: string }[] = [
-    { slug: 'emer-clubz',              name: 'Emer.Clubz' },
-    { slug: 'mewlyra',                 name: 'MewLyra' },
+    { slug: 'emer-clubz', name: 'Emer.Clubz' },
+    { slug: 'mewlyra', name: 'MewLyra' },
     { slug: 'nhac-nay-nghe-la-nghien', name: 'Nhạc Nay Nghe Là Nghiền' },
-    { slug: 'rap-zone',                name: 'Rapzone' },
-    { slug: 'fruity-music',            name: 'FruityMusic' },
-    { slug: '1987vibes-vn',            name: '1987vibesvn' },
+    { slug: 'rap-zone', name: 'Rapzone' },
+    { slug: 'fruity-music', name: 'FruityMusic' },
+    { slug: '1987vibes-vn', name: '1987vibesvn' },
 ];
 
 const SEEN_KEY = 'wordai-music-tiktok-video-seen';
@@ -175,7 +175,7 @@ export default function TikTokVideoFeedClient({
 
         video.muted = isMutedRef.current;
         if (forcePlay || !video.paused) {
-            video.play().catch(() => { video.muted = true; isMutedRef.current = true; setIsMuted(true); video.play().catch(() => {}); });
+            video.play().catch(() => { video.muted = true; isMutedRef.current = true; setIsMuted(true); video.play().catch(() => { }); });
         }
     }, []);
 
@@ -231,6 +231,23 @@ export default function TikTokVideoFeedClient({
         mountVideoToCard(idx, true);
         setTimeout(() => { preventIoRef.current = false; }, 500);
     }, [mountVideoToCard]);
+
+    // ── Tap to play/pause ──────────────────────────────────────────────────────
+    const [showIcon, setShowIcon] = useState<'play' | 'pause' | null>(null);
+    const iconTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const handleTap = useCallback(() => {
+        const video = getPooledVideo();
+        if (video.paused) {
+            video.play().catch(() => {});
+            setShowIcon('play');
+        } else {
+            video.pause();
+            setShowIcon('pause');
+        }
+        if (iconTimerRef.current) clearTimeout(iconTimerRef.current);
+        iconTimerRef.current = setTimeout(() => setShowIcon(null), 800);
+    }, []);
 
     // ── Mute toggle ───────────────────────────────────────────────────────────
     const handleToggleMute = useCallback(() => {
@@ -329,10 +346,11 @@ export default function TikTokVideoFeedClient({
                         <div
                             key={`${item.id}-${i}`}
                             ref={el => { cardRefs.current[i] = el; }}
-                            className="relative w-full h-full flex-shrink-0 snap-start overflow-hidden bg-black"
+                            className="relative w-full flex-shrink-0 snap-start overflow-hidden bg-black select-none"
                             style={{ height: '100%', minHeight: '100%' }}
+                            onClick={i === activeIdx ? handleTap : undefined}
                         >
-                            {/* Thumbnail — shown behind the video */}
+                            {/* Thumbnail — always visible behind video */}
                             <img
                                 src={item.coverUrl}
                                 alt={item.caption}
@@ -340,35 +358,63 @@ export default function TikTokVideoFeedClient({
                                 loading={i === 0 ? 'eager' : 'lazy'}
                             />
 
-                            {/* Bottom info overlay */}
-                            <div
-                                className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none"
-                                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)', padding: '48px 16px 20px' }}
-                            >
-                                <p className="text-white font-semibold text-sm line-clamp-2 leading-snug">{item.caption || item.channelName}</p>
-                                <p className="text-white/60 text-xs mt-1">{item.channelName}</p>
+                            {/* Channel badge — top center, like music card */}
+                            <div className="absolute top-[72px] left-0 right-0 flex justify-center z-20 pointer-events-none">
+                                <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/10 border border-white/20 backdrop-blur-sm">
+                                    <Music2 className="w-3 h-3 text-white/80" />
+                                    <span className="text-xs font-medium text-white/80">{item.channelName}</span>
+                                </div>
                             </div>
 
-                            {/* Right side controls */}
+                            {/* Bottom gradient — same as SlideCard */}
+                            <div
+                                className="absolute inset-x-0 bottom-0 h-2/5 pointer-events-none z-10"
+                                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 50%, transparent 100%)' }}
+                            />
+
+                            {/* Bottom info — matches SlideCard layout exactly */}
+                            <div className="absolute bottom-0 left-4 right-16 pb-10 z-20 pointer-events-none">
+                                <p className="text-white font-bold text-lg leading-tight truncate drop-shadow">
+                                    {item.caption || item.channelName}
+                                </p>
+                                <p className="text-white/65 text-sm mt-0.5 truncate">{item.channelName}</p>
+                            </div>
+
+                            {/* Right action buttons — same style as SlideCard mobile buttons */}
                             {i === activeIdx && (
-                                <div className="absolute right-3 bottom-28 flex flex-col gap-3 items-center z-30">
-                                    {/* Save/Bookmark */}
+                                <div className="absolute right-3 bottom-24 z-20 flex flex-col items-center gap-4">
                                     <button
-                                        onClick={() => handleOpenPicker(item)}
-                                        className={`w-10 h-10 rounded-full backdrop-blur-sm flex items-center justify-center transition-colors ${savedIds.has(item.id) ? 'bg-purple-600 text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}
+                                        onClick={e => { e.stopPropagation(); handleOpenPicker(item); }}
+                                        className={`w-11 h-11 rounded-full backdrop-blur-sm flex items-center justify-center border border-white/10 transition-colors ${
+                                            savedIds.has(item.id)
+                                                ? 'bg-yellow-500/30 text-yellow-400'
+                                                : 'bg-black/30 text-white hover:bg-black/50'
+                                        }`}
                                         aria-label="Save to playlist"
                                     >
                                         {savedIds.has(item.id) ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
                                     </button>
-
-                                    {/* Mute / Unmute — at bottom for easy thumb access */}
                                     <button
-                                        onClick={handleToggleMute}
-                                        className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+                                        onClick={e => { e.stopPropagation(); handleToggleMute(); }}
+                                        className="w-11 h-11 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center border border-white/10 text-white hover:bg-black/50 transition-colors"
                                         aria-label={isMuted ? 'Unmute' : 'Mute'}
                                     >
                                         {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                                     </button>
+                                </div>
+                            )}
+
+                            {/* Tap flash icon — same as SlideCard */}
+                            {i === activeIdx && showIcon && (
+                                <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
+                                    <div
+                                        className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center"
+                                        style={{ animation: 'videoIconPop 0.8s ease forwards' }}
+                                    >
+                                        {showIcon === 'pause'
+                                            ? <Pause className="w-8 h-8 text-white" />
+                                            : <Play className="w-8 h-8 text-white ml-1" />}
+                                    </div>
                                 </div>
                             )}
                         </div>
