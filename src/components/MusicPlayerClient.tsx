@@ -2593,10 +2593,10 @@ export default function MusicPlayerClient() {
 
             {subTab === 'shorts' && (
                 <div className="fixed bottom-0 z-[200] bg-[#06060f]" style={{ left: sidebarCollapsed ? 0 : 320, top: 72, right: 0 }}>
-                    {/* Back button */}
+                                    {/* Back button */}
                     <button
                         onClick={() => setSubTab('library')}
-                        className="absolute top-4 right-4 z-[60] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white/80 text-xs font-medium hover:bg-white/10 transition-colors"
+                        className="absolute top-[41px] right-4 z-[60] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white/80 text-xs font-medium hover:bg-white/10 transition-colors"
                         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     >
                         ✕ {isVietnamese ? 'Đóng' : 'Close'}

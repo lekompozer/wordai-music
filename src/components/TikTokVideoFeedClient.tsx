@@ -82,9 +82,9 @@ function getPooledVideo(): HTMLVideoElement {
 
 // ─── Blob URL cache (module-level → survives component remounts) ────────────
 const videoBlobCache = new Map<string, string>();   // originalUrl → blobUrl
-const videoFetching  = new Set<string>();            // in-flight guard
+const videoFetching = new Set<string>();            // in-flight guard
 const BLOB_CACHE_MAX = 8;
-let   pooledVideoLogicalUrl = '';                    // tracks which URL is in pooled video
+let pooledVideoLogicalUrl = '';                    // tracks which URL is in pooled video
 
 /** Start fetching `url` as a blob, store in cache when ready. Fire-and-forget. */
 function prefetchVideo(url: string): void {
@@ -258,7 +258,7 @@ export default function TikTokVideoFeedClient({
     }, [mountVideoToCard]);
 
     // ── Auto-advance when video ends ──────────────────────────────────────────
-    const goToRef = useRef<(idx: number) => void>(() => {});
+    const goToRef = useRef<(idx: number) => void>(() => { });
     useEffect(() => { goToRef.current = goTo; }, [goTo]);
 
     useEffect(() => {
@@ -433,8 +433,8 @@ export default function TikTokVideoFeedClient({
                                     <button
                                         onClick={e => { e.stopPropagation(); handleOpenPicker(item); }}
                                         className={`w-11 h-11 rounded-full backdrop-blur-sm flex items-center justify-center border border-white/10 transition-colors ${savedIds.has(item.id)
-                                                ? 'bg-yellow-500/30 text-yellow-400'
-                                                : 'bg-black/30 text-white hover:bg-black/50'
+                                            ? 'bg-yellow-500/30 text-yellow-400'
+                                            : 'bg-black/30 text-white hover:bg-black/50'
                                             }`}
                                         aria-label="Save to playlist"
                                     >
