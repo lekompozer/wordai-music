@@ -12,11 +12,12 @@
  * - Theme toggle (dark/light)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { LogIn, LogOut, Globe, Sun, Moon, User, Heart, Copy, Check, X } from 'lucide-react';
+import { LogIn, LogOut, Globe, User, Heart, Copy, Check, X, Palette } from 'lucide-react';
 import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
 import { useTheme, useLanguage } from '@/contexts/AppContext';
+import { MUSIC_ACCENT_THEMES } from '@/lib/musicThemes';
 
 function t(vi: string, en: string, isVi: boolean) {
     return isVi ? vi : en;
@@ -142,10 +143,23 @@ function DonateModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void
 
 export default function MusicHeader() {
     const { user, isLoading, signIn, signOut } = useWordaiAuth();
-    const { isDark, toggleTheme } = useTheme();
+    const { isDark, accentIndex, setAccentIndex } = useTheme();
     const { isVietnamese, toggleLanguage } = useLanguage();
     const [signingIn, setSigningIn] = useState(false);
     const [donateOpen, setDonateOpen] = useState(false);
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const pickerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!pickerOpen) return;
+        const handler = (e: MouseEvent) => {
+            if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+                setPickerOpen(false);
+            }
+        };
+        window.addEventListener('mousedown', handler);
+        return () => window.removeEventListener('mousedown', handler);
+    }, [pickerOpen]);
 
     const handleLogin = async () => {
         setSigningIn(true);
@@ -172,23 +186,23 @@ export default function MusicHeader() {
                 }}
                 className="flex-shrink-0 flex items-center justify-between pl-[72px] pr-4 h-11 bg-black/40 border-b border-white/5 select-none"
             >
-                {/* Left: free label + coffee button */}
-                <div className="flex items-center gap-2">
-                    <span className="text-xs text-white/60 hidden sm:block">Keep WynAI Music free</span>
-                    <Heart className="w-3.5 h-3.5 text-red-400 fill-red-400 flex-shrink-0" />
-                    <button
-                        onMouseDown={e => e.stopPropagation()}
-                        onClick={() => setDonateOpen(true)}
-                        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium hover:bg-amber-500/25 transition-colors"
-                        title={t('Ủng hộ WynAI Music', 'Buy us a coffee', isVietnamese)}
-                    >
-                        ☕ {t('Ủng hộ', 'Support', isVietnamese)}
-                    </button>
-                </div>
+                {/* Left: title / branding — intentionally empty (drag region) */}
+                <div />
 
                 {/* Right: controls */}
                 <div className="flex items-center gap-2">
+                    {/* Keep free label + Support Us button */}
+                    <span className="text-xs text-white/50 hidden sm:block select-none">Keep WynAI Music free</span>
+                    <Heart className="w-3 h-3 text-red-400 fill-red-400 flex-shrink-0" />
+                    <button
+                        onMouseDown={e => e.stopPropagation()}
+                        onClick={() => setDonateOpen(true)}
+                        style={{ WebkitAppRegion: 'no-drag', background: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' } as React.CSSProperties}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-white text-xs font-semibold transition-opacity hover:opacity-90"
+                    >
+                        Support Us
+                    </button>
+
                     {/* Language toggle */}
                     <button
                         onMouseDown={e => e.stopPropagation()}
@@ -201,16 +215,50 @@ export default function MusicHeader() {
                         <span>{isVietnamese ? 'VI' : 'EN'}</span>
                     </button>
 
-                    {/* Theme toggle */}
-                    <button
-                        onMouseDown={e => e.stopPropagation()}
-                        onClick={toggleTheme}
-                        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-                        className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
-                        title={isDark ? 'Switch to light' : 'Switch to dark'}
-                    >
-                        {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                    </button>
+                    {/* Accent color picker (replaces dark/light toggle) */}
+                    <div className="relative" ref={pickerRef}>
+                        <button
+                            onMouseDown={e => e.stopPropagation()}
+                            onClick={() => setPickerOpen(v => !v)}
+                            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                            className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                            title="Choose accent color"
+                        >
+                            <Palette className="w-3.5 h-3.5" />
+                        </button>
+                        {pickerOpen && (
+                            <div
+                                className="absolute right-0 top-8 z-[9999] p-2 rounded-xl border border-white/15 shadow-2xl"
+                                style={{ background: 'rgba(8,12,28,0.96)', backdropFilter: 'blur(16px)', width: 140 }}
+                            >
+                                <p className="text-[10px] text-white/40 mb-2 px-0.5">{isVietnamese ? 'Màu sidebar' : 'Sidebar color'}</p>
+                                <div className="grid grid-cols-6 gap-1.5">
+                                    {MUSIC_ACCENT_THEMES.map((theme, i) => (
+                                        <button
+                                            key={i}
+                                            onMouseDown={e => e.stopPropagation()}
+                                            onClick={() => { setAccentIndex(accentIndex === i ? null : i); setPickerOpen(false); }}
+                                            className="w-5 h-5 rounded-full transition-transform hover:scale-125 focus:outline-none"
+                                            style={{
+                                                background: theme.accent,
+                                                boxShadow: accentIndex === i ? `0 0 0 2px white, 0 0 0 3px ${theme.accent}` : undefined,
+                                            }}
+                                            title={`${theme.name}${accentIndex === null && i === 0 ? ' (auto)' : ''}`}
+                                        />
+                                    ))}
+                                </div>
+                                {accentIndex !== null && (
+                                    <button
+                                        onMouseDown={e => e.stopPropagation()}
+                                        onClick={() => { setAccentIndex(null); setPickerOpen(false); }}
+                                        className="mt-2 w-full text-[10px] text-white/40 hover:text-white/70 transition-colors text-center"
+                                    >
+                                        {isVietnamese ? '↺ Tự động đổi màu' : '↺ Auto-rotate'}
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Auth */}
                     {isLoading ? (

@@ -12,6 +12,9 @@ interface ThemeContextType {
     toggleTheme: () => void;
     setIsDark: (value: boolean) => void;
     setTheme: (theme: 'light' | 'dark') => void;
+    /** 0-11: index into MUSIC_ACCENT_THEMES. null = auto-rotate in sidebar. */
+    accentIndex: number | null;
+    setAccentIndex: (i: number | null) => void;
 }
 
 interface LanguageContextType {
@@ -25,26 +28,37 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-    const [isDark, setIsDark] = useState(true); // Music app defaults to dark
+    // Music app is always dark — light mode removed.
+    const [isDark] = useState(true);
+    const [accentIndex, setAccentIndexState] = useState<number | null>(null);
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem('wordai-music-theme');
-        if (savedTheme) {
-            setIsDark(savedTheme === 'dark');
+        // Persist + load accent selection; ignore old theme key
+        const savedAccent = localStorage.getItem('wordai-music-accent');
+        if (savedAccent !== null) {
+            const n = parseInt(savedAccent, 10);
+            if (!isNaN(n) && n >= 0 && n <= 11) setAccentIndexState(n);
         }
-        // No saved theme → keep default true (dark) regardless of system preference
+        // Always enforce dark
+        document.documentElement.classList.add('dark');
     }, []);
 
-    useEffect(() => {
-        document.documentElement.classList.toggle('dark', isDark);
-        localStorage.setItem('wordai-music-theme', isDark ? 'dark' : 'light');
-    }, [isDark]);
+    const setAccentIndex = (i: number | null) => {
+        setAccentIndexState(i);
+        if (i === null) {
+            localStorage.removeItem('wordai-music-accent');
+        } else {
+            localStorage.setItem('wordai-music-accent', String(i));
+        }
+    };
 
-    const toggleTheme = () => setIsDark(v => !v);
-    const setTheme = (theme: 'light' | 'dark') => setIsDark(theme === 'dark');
+    // Keep legacy setters as no-ops so existing callers don't break
+    const setIsDark = (_v: boolean) => { /* always dark */ };
+    const toggleTheme = () => { /* always dark */ };
+    const setTheme = (_t: 'light' | 'dark') => { /* always dark */ };
 
     return (
-        <ThemeContext.Provider value={{ isDark, toggleTheme, setIsDark, setTheme }}>
+        <ThemeContext.Provider value={{ isDark, toggleTheme, setIsDark, setTheme, accentIndex, setAccentIndex }}>
             {children}
         </ThemeContext.Provider>
     );

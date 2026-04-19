@@ -39,6 +39,8 @@ import { fetchTrackPlays } from '@/services/musicService';
 import { setSessionBlob, extractFileDuration, cacheAudioBlob } from '@/lib/audioCache';
 
 import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
+import { useTheme } from '@/contexts/AppContext';
+import { MUSIC_ACCENT_THEMES, buildSidebarGradient } from '@/lib/musicThemes';
 
 import type { LocalPlaylist } from '@/lib/localLibrary';
 
@@ -241,6 +243,22 @@ export default function MusicSidebar({
 }: MusicSidebarProps) {
     const homeSidebarCollapsed = useContext(HomeSidebarCollapsedCtx);
     const { user } = useWordaiAuth();
+    const { accentIndex } = useTheme();
+
+    // Auto-rotating accent: cycles through 12 themes every 60 s; manual pick overrides start index.
+    const [displayAccentIdx, setDisplayAccentIdx] = useState(accentIndex ?? 0);
+    useEffect(() => {
+        // When user manually picks a color, sync immediately
+        if (accentIndex !== null) setDisplayAccentIdx(accentIndex);
+    }, [accentIndex]);
+    useEffect(() => {
+        // Auto-rotate only when no manual selection
+        if (accentIndex !== null) return;
+        const timer = setInterval(() => {
+            setDisplayAccentIdx(i => (i + 1) % MUSIC_ACCENT_THEMES.length);
+        }, 60_000);
+        return () => clearInterval(timer);
+    }, [accentIndex]);
     const [mounted, setMounted] = useState(false);
     const [isMobileViewport, setIsMobileViewport] = useState(false);
     const [shortsOpen, setShortsOpen] = useState(false);
@@ -1070,26 +1088,21 @@ export default function MusicSidebar({
     if (!mounted) return null;
     if (!desktopPinned && !isOpen) return null;
 
-    const effectiveDark = isMobileViewport ? true : isDark;
-    const border = effectiveDark ? 'border-white/10' : 'border-slate-200/80';
-    const textPrimary = effectiveDark ? 'text-white' : 'text-slate-900';
-    const textSec = effectiveDark ? 'text-slate-300/70' : 'text-slate-500';
-    const textMuted = effectiveDark ? 'text-slate-400/60' : 'text-slate-400';
-    const inputCls = effectiveDark
-        ? 'bg-[#1e2a45] border-white/10 text-white placeholder:text-slate-400/55 [color-scheme:dark]'
-        : 'bg-white border-slate-200/90 text-slate-900 placeholder:text-slate-400 [color-scheme:light]';
-    const hoverCls = effectiveDark ? 'hover:bg-white/[0.07]' : 'hover:bg-slate-100/80';
-    const secondarySurface = effectiveDark ? 'bg-white/[0.055]' : 'bg-white/75';
-    const elevatedSurface = effectiveDark ? 'bg-[#0f172a]/80' : 'bg-white/88';
-    const accentPrimary = '#4f46e5';
-    const accentStrong = '#312e81';
-    const panelStyle = effectiveDark
-        ? {
-            background: 'radial-gradient(circle at top left, rgba(79,70,229,0.22), transparent 34%), radial-gradient(circle at bottom right, rgba(59,130,246,0.16), transparent 32%), linear-gradient(180deg, rgba(8,15,35,0.98) 0%, rgba(10,18,39,0.98) 100%)',
-        }
-        : {
-            background: 'radial-gradient(circle at top left, rgba(79,70,229,0.14), transparent 34%), radial-gradient(circle at bottom right, rgba(59,130,246,0.1), transparent 36%), linear-gradient(180deg, rgba(245,247,255,0.97) 0%, rgba(255,255,255,0.94) 100%)',
-        };
+    const effectiveDark = true; // always dark
+    const border = 'border-white/10';
+    const textPrimary = 'text-white';
+    const textSec = 'text-slate-300/70';
+    const textMuted = 'text-slate-400/60';
+    const inputCls = 'bg-[#1e2a45] border-white/10 text-white placeholder:text-slate-400/55 [color-scheme:dark]';
+    const hoverCls = 'hover:bg-white/[0.07]';
+    const secondarySurface = 'bg-white/[0.055]';
+    const elevatedSurface = 'bg-[#0f172a]/80';
+    const accentPrimary = MUSIC_ACCENT_THEMES[displayAccentIdx].accent;
+    const { r: ar, g: ag, b: ab } = MUSIC_ACCENT_THEMES[displayAccentIdx];
+    const accentStrong = `rgba(${ar},${ag},${ab},0.9)`;
+    const panelStyle = {
+        background: buildSidebarGradient(displayAccentIdx),
+    };
 
     // ── Tab renderer ──────────────────────────────────────────────────────────
 
