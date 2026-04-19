@@ -2687,7 +2687,7 @@ export default function MusicPlayerClient() {
                 >
                     <iframe
                         ref={desktopYtIframeRef}
-                        src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1`}
+                        src={`https://www.youtube-nocookie.com/embed/${desktopGlobalYtId}?autoplay=1&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(ytEmbedOrigin)}`}
                         className="w-full h-full"
                         style={{ border: 'none' }}
                         allow="autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen"
@@ -2839,22 +2839,20 @@ export default function MusicPlayerClient() {
                 </div>
             )}
 
-            {/* Global Desktop Local Video — always in DOM so localVideoRef is set on mount.
-                Hidden when not active via opacity/pointer-events. Positioned over the card
-                exactly like the YouTube overlay (88px below card top, above bottom controls). */}
+            {/* Global Desktop Local Video — fullscreen TikTok style (uses mainContentRect like YouTube fullMode) */}
             <video
                 ref={localVideoRef}
                 playsInline
                 className="transition-opacity duration-300"
-                style={desktopCardRect ? {
+                style={mainContentRect ? {
                     position: 'fixed',
-                    left: desktopCardRect.left,
-                    top: desktopCardRect.top + 88,
-                    width: desktopCardRect.width,
-                    height: Math.max(0, desktopCardRect.height - 88 - 130),
+                    left: mainContentRect.left,
+                    top: mainContentRect.top,
+                    width: mainContentRect.width,
+                    height: mainContentRect.height,
                     objectFit: 'contain',
                     background: '#000',
-                    zIndex: 20,
+                    zIndex: 450,
                     opacity: localVideoVisible && activeSlide?.isVideo ? 1 : 0,
                     pointerEvents: localVideoVisible && activeSlide?.isVideo ? 'auto' : 'none',
                 } : {
@@ -2864,7 +2862,74 @@ export default function MusicPlayerClient() {
                     opacity: 0,
                     pointerEvents: 'none',
                 }}
+                onClick={() => {
+                    const v = localVideoRef.current;
+                    if (!v) return;
+                    if (v.paused) { void v.play().catch(() => null); setIsPlaying(true); }
+                    else { v.pause(); setIsPlaying(false); }
+                }}
             />
+            {/* Local video TikTok-style overlay — title, seek bar, like/save */}
+            {localVideoVisible && activeSlide?.isVideo && mainContentRect && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        left: mainContentRect.left,
+                        top: mainContentRect.top,
+                        width: mainContentRect.width,
+                        height: mainContentRect.height,
+                        zIndex: 451,
+                        pointerEvents: 'none',
+                    }}
+                    onWheel={e => feedRef.current?.scrollBy({ top: e.deltaY, behavior: 'smooth' })}
+                >
+                    {/* Bottom gradient + info + controls */}
+                    <div
+                        className="absolute bottom-0 left-0 right-0"
+                        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 55%, transparent 100%)', padding: '48px 20px 20px' }}
+                    >
+                        <div className="flex items-end justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                                {activeSlide.title && <p className="text-white font-bold text-lg leading-tight truncate drop-shadow">{activeSlide.title}</p>}
+                                {activeSlide.artist && <p className="text-white/65 text-sm mt-0.5 truncate">{activeSlide.artist}</p>}
+                                {/* Seek bar */}
+                                <div
+                                    className="mt-2.5 relative flex items-center cursor-pointer pointer-events-auto"
+                                    style={{ height: 18 }}
+                                    onClick={e => {
+                                        e.stopPropagation();
+                                        if (duration <= 0) return;
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        handleSeek(((e.clientX - rect.left) / rect.width) * duration);
+                                    }}
+                                >
+                                    <div className="w-full h-[3px] rounded-full bg-white/30 relative overflow-visible">
+                                        <div className="h-full rounded-full bg-white/90" style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }} />
+                                        {duration > 0 && (
+                                            <div
+                                                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full pointer-events-none shadow-sm bg-white"
+                                                style={{ left: `max(0px, calc(${duration > 0 ? (currentTime / duration) * 100 : 0}% - 6px))` }}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="pointer-events-auto flex flex-col items-center gap-3 flex-shrink-0">
+                                <button onClick={() => handleLike(activeSlide.id)}>
+                                    <div className={`w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/10 transition-colors ${likedIds.has(activeSlide.id) ? 'text-red-400' : 'text-white'}`}>
+                                        <Heart className="w-5 h-5" fill={likedIds.has(activeSlide.id) ? 'currentColor' : 'none'} />
+                                    </div>
+                                </button>
+                                <button onClick={() => handleSave(activeSlide.id)}>
+                                    <div className={`w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center border border-white/10 transition-colors ${savedIds.has(activeSlide.id) ? 'text-yellow-400' : 'text-white'}`}>
+                                        {savedIds.has(activeSlide.id) ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Mobile tap-to-unmute hint */}
             {autoplayBlocked && (
