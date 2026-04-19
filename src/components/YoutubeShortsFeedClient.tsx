@@ -36,12 +36,25 @@ function saveSeenIds(lang: string, ids: Set<string>) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+const SAVED_KEY = 'wordai-music-shorts-saved';
+
+function loadSavedIds(): Set<string> {
+    try { return new Set(JSON.parse(localStorage.getItem(SAVED_KEY) ?? '[]') as string[]); }
+    catch { return new Set(); }
+}
+function persistSavedIds(ids: Set<string>) {
+    try { localStorage.setItem(SAVED_KEY, JSON.stringify(Array.from(ids))); } catch { /* ignore */ }
+}
+
 export default function YoutubeShortsFeedClient() {
     const [lang, setLang] = useState<'vi' | 'en'>('vi');
     // Accumulated queue of unseen videos to display
     const [queue, setQueue] = useState<YTShortItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+
+    useEffect(() => { setSavedIds(loadSavedIds()); }, []);
 
     // Offset = number of videos already fetched from API (increments by LIMIT each call)
     const offsetRef = useRef(0);
@@ -122,10 +135,21 @@ export default function YoutubeShortsFeedClient() {
         await fetchMore(false);
     }, [fetchMore]);
 
+    // ── Save / bookmark ───────────────────────────────────────────────────────
+    const handleSave = useCallback((item: YTShortItem) => {
+        setSavedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(item.youtube_id)) { next.delete(item.youtube_id); }
+            else { next.add(item.youtube_id); }
+            persistSavedIds(next);
+            return next;
+        });
+    }, []);
+
     return (
         <div className="h-full w-full relative">
             {/* Language tabs */}
-            <div className="absolute top-[56px] right-4 z-50 flex gap-2">
+            <div className="absolute top-[70px] right-4 z-50 flex gap-2">
                 <button
                     onClick={() => setLang('vi')}
                     className={`px-3 py-1.5 rounded-full text-sm font-medium backdrop-blur-md border ${lang === 'vi' ? 'bg-red-500/20 border-red-500/50 text-red-500' : 'bg-black/40 border-white/10 text-white hover:bg-black/60'}`}
@@ -146,6 +170,8 @@ export default function YoutubeShortsFeedClient() {
                 onLoadMore={handleLoadMore}
                 onVideoWatched={handleVideoWatched}
                 onActiveIndexChange={handleActiveIndexChange}
+                onSave={handleSave}
+                savedIds={savedIds}
                 showControls={true}
             />
         </div>

@@ -365,8 +365,8 @@ export default function TikTokVideoFeedClient({
 
     return (
         <>
-            <div ref={containerRef} className="h-full w-full relative bg-black overflow-hidden">
-                {/* Desktop prev / next */}
+            <div ref={containerRef} className="h-full w-full relative bg-black overflow-hidden flex items-center justify-center">
+                {/* Desktop prev / next — outside the 9:16 box, on the right */}
                 <div className="hidden lg:flex absolute right-4 top-1/2 -translate-y-1/2 flex-col gap-2 z-40">
                     <button
                         onClick={() => goTo(activeIdx - 1)}
@@ -384,6 +384,16 @@ export default function TikTokVideoFeedClient({
                     </button>
                 </div>
 
+                {/* 9:16 portrait container — centered in the panel */}
+                <div
+                    className="relative overflow-hidden"
+                    style={{
+                        aspectRatio: '9 / 16',
+                        height: '100%',
+                        maxHeight: '100%',
+                        maxWidth: 'calc(100% * 9 / 16)',
+                    }}
+                >
                 {/* Snap scroll container */}
                 <div
                     ref={snapRef}
@@ -474,6 +484,7 @@ export default function TikTokVideoFeedClient({
                         {isVietnamese ? 'Đã lưu!' : 'Saved!'}
                     </div>
                 )}
+                </div>{/* end 9:16 wrapper */}
             </div>
 
             {/* Playlist picker portal */}
