@@ -65,8 +65,8 @@ function getPooledVideo(): HTMLVideoElement {
     if (!pooledVideo) {
         pooledVideo = document.createElement('video');
         pooledVideo.playsInline = true;
-        pooledVideo.loop = true;
-        pooledVideo.preload = 'metadata';
+        pooledVideo.loop = false;
+        pooledVideo.preload = 'auto';
         pooledVideo.setAttribute('webkit-playsinline', 'true');
         pooledVideo.muted = true;
         Object.assign(pooledVideo.style, {
@@ -78,6 +78,30 @@ function getPooledVideo(): HTMLVideoElement {
         });
     }
     return pooledVideo;
+}
+
+// ─── Blob URL cache (module-level → survives component remounts) ────────────
+const videoBlobCache = new Map<string, string>();   // originalUrl → blobUrl
+const videoFetching  = new Set<string>();            // in-flight guard
+const BLOB_CACHE_MAX = 8;
+let   pooledVideoLogicalUrl = '';                    // tracks which URL is in pooled video
+
+/** Start fetching `url` as a blob, store in cache when ready. Fire-and-forget. */
+function prefetchVideo(url: string): void {
+    if (videoBlobCache.has(url) || videoFetching.has(url)) return;
+    videoFetching.add(url);
+    fetch(url)
+        .then(r => { if (!r.ok) throw new Error('fetch failed'); return r.blob(); })
+        .then(blob => {
+            const blobUrl = URL.createObjectURL(blob);
+            if (videoBlobCache.size >= BLOB_CACHE_MAX) {
+                const oldest = videoBlobCache.keys().next().value;
+                if (oldest) { URL.revokeObjectURL(videoBlobCache.get(oldest)!); videoBlobCache.delete(oldest); }
+            }
+            videoBlobCache.set(url, blobUrl);
+        })
+        .catch(() => { /* ignore network errors */ })
+        .finally(() => { videoFetching.delete(url); });
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -166,11 +190,12 @@ export default function TikTokVideoFeedClient({
             videoMountedRef.current = card;
         }
 
-        // Change source if needed
+        // Change source if needed — prefer cached blob URL so re-plays are instant
         const item = itemsRef.current[idx];
         if (!item) return;
-        if (video.getAttribute('src') !== item.videoUrl) {
-            video.src = item.videoUrl;
+        if (pooledVideoLogicalUrl !== item.videoUrl) {
+            pooledVideoLogicalUrl = item.videoUrl;
+            video.src = videoBlobCache.get(item.videoUrl) ?? item.videoUrl;
         }
 
         video.muted = isMutedRef.current;
@@ -214,7 +239,7 @@ export default function TikTokVideoFeedClient({
     // ── Pause video on unmount ────────────────────────────────────────────────
     useEffect(() => {
         return () => {
-            if (pooledVideo) { pooledVideo.pause(); pooledVideo.src = ''; }
+            if (pooledVideo) { pooledVideo.pause(); pooledVideo.src = ''; pooledVideoLogicalUrl = ''; }
         };
     }, []);
 
@@ -232,6 +257,28 @@ export default function TikTokVideoFeedClient({
         setTimeout(() => { preventIoRef.current = false; }, 500);
     }, [mountVideoToCard]);
 
+    // ── Auto-advance when video ends ──────────────────────────────────────────
+    const goToRef = useRef<(idx: number) => void>(() => {});
+    useEffect(() => { goToRef.current = goTo; }, [goTo]);
+
+    useEffect(() => {
+        const video = getPooledVideo();
+        const handleEnded = () => {
+            const next = activeIdxRef.current + 1;
+            if (next < itemsRef.current.length) goToRef.current(next);
+        };
+        video.addEventListener('ended', handleEnded);
+        return () => video.removeEventListener('ended', handleEnded);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ── Preload next 2 videos as blob URLs ────────────────────────────────────
+    useEffect(() => {
+        for (let i = 1; i <= 2; i++) {
+            const item = items[activeIdx + i];
+            if (item) prefetchVideo(item.videoUrl);
+        }
+    }, [activeIdx, items]);
+
     // ── Tap to play/pause ──────────────────────────────────────────────────────
     const [showIcon, setShowIcon] = useState<'play' | 'pause' | null>(null);
     const iconTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -239,7 +286,7 @@ export default function TikTokVideoFeedClient({
     const handleTap = useCallback(() => {
         const video = getPooledVideo();
         if (video.paused) {
-            video.play().catch(() => {});
+            video.play().catch(() => { });
             setShowIcon('play');
         } else {
             video.pause();
@@ -385,11 +432,10 @@ export default function TikTokVideoFeedClient({
                                 <div className="absolute right-3 bottom-24 z-20 flex flex-col items-center gap-4">
                                     <button
                                         onClick={e => { e.stopPropagation(); handleOpenPicker(item); }}
-                                        className={`w-11 h-11 rounded-full backdrop-blur-sm flex items-center justify-center border border-white/10 transition-colors ${
-                                            savedIds.has(item.id)
+                                        className={`w-11 h-11 rounded-full backdrop-blur-sm flex items-center justify-center border border-white/10 transition-colors ${savedIds.has(item.id)
                                                 ? 'bg-yellow-500/30 text-yellow-400'
                                                 : 'bg-black/30 text-white hover:bg-black/50'
-                                        }`}
+                                            }`}
                                         aria-label="Save to playlist"
                                     >
                                         {savedIds.has(item.id) ? <BookmarkCheck className="w-5 h-5" /> : <Bookmark className="w-5 h-5" />}
