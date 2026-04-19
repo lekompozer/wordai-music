@@ -2482,7 +2482,7 @@ export default function MusicPlayerClient() {
             tiktokId: t.tiktokId,
             facebookId: t.facebookId,
             facebookIsReel: t.facebookId ? (t.audioUrl.startsWith('fbreel:') ? true : undefined) : undefined,
-            isVideo: t.isVideo ?? (t.source === 'local' ? ['mp4','mov','webm','mkv','m4v'].some(ext => (t.audioUrl ?? '').toLowerCase().includes(`.${ext}`)) : false),
+            isVideo: t.isVideo ?? (t.source === 'local' ? ['mp4', 'mov', 'webm', 'mkv', 'm4v'].some(ext => (t.audioUrl ?? '').toLowerCase().includes(`.${ext}`)) : false),
         }));
         saveLastCtx({ type: 'playlist', id: playlistId ?? 'custom', name: playlistName ?? 'Playlist', tracks: orderedTracks.slice(0, 50) });
 

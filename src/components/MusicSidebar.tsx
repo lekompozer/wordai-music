@@ -2139,7 +2139,7 @@ export default function MusicSidebar({
                                     key={t.id}
                                     className={`flex items-center gap-2 px-3 py-2.5 cursor-pointer transition-all border-b ${effectiveDark ? 'hover:bg-white/[0.06] border-white/[0.04]' : 'hover:bg-slate-100 border-slate-100'}`}
                                     onClick={() => {
-                                        const VIDEO_EXTS = ['mp4','mov','webm','mkv','m4v'];
+                                        const VIDEO_EXTS = ['mp4', 'mov', 'webm', 'mkv', 'm4v'];
                                         onPlayTracks(localPlaylists[0].tracks.map(tr => ({
                                             id: tr.id, title: tr.title, artist: tr.artist,
                                             audioUrl: tr.audioUrl, durationSec: tr.durationSec,
