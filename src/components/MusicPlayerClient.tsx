@@ -12,7 +12,7 @@ import { useWordaiAuth } from '@/contexts/WordaiAuthContext';
 import MusicSidebar, { type SidebarTrack } from './MusicSidebar';
 import dynamic from 'next/dynamic';
 const YoutubeShortsFeedClient = dynamic(() => import('./YoutubeShortsFeedClient'), { ssr: false });
-const TikTokMusicFeedClient = dynamic(() => import('./TikTokMusicFeedClient'), { ssr: false });
+const TikTokVideoFeedClient = dynamic(() => import('./TikTokVideoFeedClient'), { ssr: false });
 import { getAudioBlob, getSessionBlob, setSessionBlob, cacheAudioBlob } from '@/lib/audioCache';
 import { recordTrackPlay } from '@/services/musicService';
 import {
@@ -1279,7 +1279,7 @@ const MAX_SLIDES = 30;
 
 export default function MusicPlayerClient() {
     const { isDark } = useTheme();
-    const { isVietnamese } = useLanguage();
+    const { isVietnamese, toggleLanguage } = useLanguage();
     const { user } = useWordaiAuth();
 
     const [selectedChannel, setSelectedChannel] = useState<ChannelSlug>(() => {
@@ -2615,7 +2615,7 @@ export default function MusicPlayerClient() {
                     >
                         ✕ {isVietnamese ? 'Đóng' : 'Close'}
                     </button>
-                    <TikTokMusicFeedClient
+                    <TikTokVideoFeedClient
                         isVietnamese={isVietnamese}
                         isDark={isDark}
                         playlistOptions={playlistOptions}
@@ -2788,6 +2788,14 @@ export default function MusicPlayerClient() {
                             >
                                 <Minimize2 className="w-4 h-4" />
                             </button>
+                            {/* VI/EN language toggle — right side, same row as minimize */}
+                            <button
+                                className="absolute top-4 right-4 z-30 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-semibold hover:bg-black/80 transition-colors border border-white/15"
+                                onClick={toggleLanguage}
+                                title="Toggle language"
+                            >
+                                {isVietnamese ? 'VI' : 'EN'}
+                            </button>
                             <div
                                 className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none"
                                 style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 55%, transparent 100%)', padding: '56px 24px 24px' }}
@@ -2849,6 +2857,14 @@ export default function MusicPlayerClient() {
                                 onClick={() => setYtFullMode(false)}
                             >
                                 <Minimize2 className="w-4 h-4" />
+                            </button>
+                            {/* VI/EN language toggle — right side */}
+                            <button
+                                className="absolute top-4 right-4 z-30 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-semibold hover:bg-black/80 transition-colors border border-white/15"
+                                onClick={toggleLanguage}
+                                title="Toggle language"
+                            >
+                                {isVietnamese ? 'VI' : 'EN'}
                             </button>
                             <div
                                 className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none"

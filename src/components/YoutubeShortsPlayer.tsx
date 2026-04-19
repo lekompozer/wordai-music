@@ -251,8 +251,8 @@ export default function YoutubeShortsPlayer({
 
 
 
-            {/* Desktop prev / next buttons — right side, above iframe */}
-            <div className="hidden lg:flex absolute right-4 bottom-24 flex-col gap-2 z-30">
+            {/* Desktop prev / next buttons — right side, vertically centered */}
+            <div className="hidden lg:flex absolute right-4 top-1/2 -translate-y-1/2 flex-col gap-2 z-30">
                 <button
                     onClick={handlePrev}
                     disabled={activeIndex === 0}

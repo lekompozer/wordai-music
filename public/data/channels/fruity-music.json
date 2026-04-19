@@ -1,0 +1,873 @@
+{
+  "slug": "fruity-music",
+  "name": "Fruity Music",
+  "category": "music",
+  "updatedAt": "2026-03-31T10:19:18.369Z",
+  "total": 123,
+  "complete": 121,
+  "items": [
+    {
+      "id": "7558751953925213472",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7558751953925213472/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7558751953925213472.mp4",
+      "hasVideo": true,
+      "caption": "Fruity flavor, fruity sound 🍉"
+    },
+    {
+      "id": "7569940673038683424",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7569940673038683424/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7569940673038683424.mp4",
+      "hasVideo": true,
+      "caption": "Playlist cho buổi sáng tươi mới 🌞"
+    },
+    {
+      "id": "7571963860551290144",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7571963860551290144/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7571963860551290144.mp4",
+      "hasVideo": true,
+      "caption": "Nghe xong tự khắc mood lên cao 🚀"
+    },
+    {
+      "id": "7572303019119758624",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7572303019119758624/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7572303019119758624.mp4",
+      "hasVideo": true,
+      "caption": "Mỗi bài nhạc là một màu sắc mới 🌈"
+    },
+    {
+      "id": "7572711196713864481",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7572711196713864481/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7572711196713864481.mp4",
+      "hasVideo": true,
+      "caption": "Follow Fruity Music để nhận nhạc hay mỗi ngày 🔔"
+    },
+    {
+      "id": "7573070512855780640",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7573070512855780640/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7573070512855780640.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — màu sắc trong từng nốt nhạc 🍊🎵"
+    },
+    {
+      "id": "7573454616721935649",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7573454616721935649/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7573454616721935649.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7573798244128492832",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7573798244128492832/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7573798244128492832.mp4",
+      "hasVideo": true,
+      "caption": "Mỗi bài nhạc là một màu sắc mới 🌈"
+    },
+    {
+      "id": "7574184384387894560",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7574184384387894560/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7574184384387894560.mp4",
+      "hasVideo": true,
+      "caption": "Playlist cho buổi sáng tươi mới 🌞"
+    },
+    {
+      "id": "7574565549066292513",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7574565549066292513/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7574565549066292513.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7574907599993310496",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7574907599993310496/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7574907599993310496.mp4",
+      "hasVideo": true,
+      "caption": "Follow Fruity Music để nhận nhạc hay mỗi ngày 🔔"
+    },
+    {
+      "id": "7575274443388325153",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7575274443388325153/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7575274443388325153.mp4",
+      "hasVideo": true,
+      "caption": "Fresh beats for a fresh day 🍋✨"
+    },
+    {
+      "id": "7575616048666332449",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7575616048666332449/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7575616048666332449.mp4",
+      "hasVideo": true,
+      "caption": "Save để nghe lại lúc cần cheer up nha 🔖"
+    },
+    {
+      "id": "7575963042966424864",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7575963042966424864/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7575963042966424864.mp4",
+      "hasVideo": true,
+      "caption": "Fruity vibes only 🍓"
+    },
+    {
+      "id": "7576626190706953504",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7576626190706953504/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7576626190706953504.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — sweet, fresh, addictive 🍑"
+    },
+    {
+      "id": "7577107284174621984",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7577107284174621984/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7577107284174621984.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7577510316901141792",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7577510316901141792/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7577510316901141792.mp4",
+      "hasVideo": true,
+      "caption": "Save để nghe lại lúc cần cheer up nha 🔖"
+    },
+    {
+      "id": "7577905836744297761",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7577905836744297761/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7577905836744297761.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7578575597362744608",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7578575597362744608/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7578575597362744608.mp4",
+      "hasVideo": true,
+      "caption": "Follow Fruity Music để nhận nhạc hay mỗi ngày 🔔"
+    },
+    {
+      "id": "7578967340801346848",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7578967340801346848/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7578967340801346848.mp4",
+      "hasVideo": true,
+      "caption": "Follow Fruity Music để nhận nhạc hay mỗi ngày 🔔"
+    },
+    {
+      "id": "7579346701970836769",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7579346701970836769/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7579346701970836769.mp4",
+      "hasVideo": true,
+      "caption": "Mỗi bài nhạc là một màu sắc mới 🌈"
+    },
+    {
+      "id": "7579746113184451873",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7579746113184451873/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7579746113184451873.mp4",
+      "hasVideo": true,
+      "caption": "Fruity vibes only 🍓"
+    },
+    {
+      "id": "7580514297625759009",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7580514297625759009/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7580514297625759009.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7581193980004601121",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7581193980004601121/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7581193980004601121.mp4",
+      "hasVideo": true,
+      "caption": "Playlist cho buổi sáng tươi mới 🌞"
+    },
+    {
+      "id": "7581526769300180256",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7581526769300180256/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7581526769300180256.mp4",
+      "hasVideo": true,
+      "caption": "Follow Fruity Music để nhận nhạc hay mỗi ngày 🔔"
+    },
+    {
+      "id": "7581948750575242528",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7581948750575242528/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7581948750575242528.mp4",
+      "hasVideo": true,
+      "caption": "Fruity vibes only 🍓"
+    },
+    {
+      "id": "7582299902076570913",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7582299902076570913/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7582299902076570913.mp4",
+      "hasVideo": true,
+      "caption": "Save để nghe lại lúc cần cheer up nha 🔖"
+    },
+    {
+      "id": "7582704479590501665",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7582704479590501665/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7582704479590501665.mp4",
+      "hasVideo": true,
+      "caption": "Follow Fruity Music để nhận nhạc hay mỗi ngày 🔔"
+    },
+    {
+      "id": "7583079472639855905",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7583079472639855905/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7583079472639855905.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — màu sắc trong từng nốt nhạc 🍊🎵"
+    },
+    {
+      "id": "7583382242001571105",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7583382242001571105/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7583382242001571105.mp4",
+      "hasVideo": true,
+      "caption": "Nghe xong tự khắc mood lên cao 🚀"
+    },
+    {
+      "id": "7583725962374745377",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7583725962374745377/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7583725962374745377.mp4",
+      "hasVideo": true,
+      "caption": "Save để nghe lại lúc cần cheer up nha 🔖"
+    },
+    {
+      "id": "7584181571356331297",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7584181571356331297/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7584181571356331297.mp4",
+      "hasVideo": true,
+      "caption": "Follow Fruity Music để nhận nhạc hay mỗi ngày 🔔"
+    },
+    {
+      "id": "7584585811509644577",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7584585811509644577/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7584585811509644577.mp4",
+      "hasVideo": true,
+      "caption": "Follow Fruity Music để nhận nhạc hay mỗi ngày 🔔"
+    },
+    {
+      "id": "7585293797362257185",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7585293797362257185/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7585293797362257185.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7585628963800698144",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7585628963800698144/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7585628963800698144.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — màu sắc trong từng nốt nhạc 🍊🎵"
+    },
+    {
+      "id": "7586402456028859680",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7586402456028859680/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7586402456028859680.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7586790489567939872",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7586790489567939872/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7586790489567939872.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7587167009109069089",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7587167009109069089/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7587167009109069089.mp4",
+      "hasVideo": true,
+      "caption": "Save để nghe lại lúc cần cheer up nha 🔖"
+    },
+    {
+      "id": "7588207125495614752",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7588207125495614752/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7588207125495614752.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — sweet, fresh, addictive 🍑"
+    },
+    {
+      "id": "7588591612834450720",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7588591612834450720/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7588591612834450720.mp4",
+      "hasVideo": true,
+      "caption": "Nghe xong tự khắc mood lên cao 🚀"
+    },
+    {
+      "id": "7588965681006251297",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7588965681006251297/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7588965681006251297.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7589387703385476384",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7589387703385476384/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7589387703385476384.mp4",
+      "hasVideo": true,
+      "caption": "Nghe xong tự khắc mood lên cao 🚀"
+    },
+    {
+      "id": "7590018863799094560",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7590018863799094560/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7590018863799094560.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7590474146065304865",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7590474146065304865/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7590474146065304865.mp4",
+      "hasVideo": true,
+      "caption": "Playlist cho buổi sáng tươi mới 🌞"
+    },
+    {
+      "id": "7590894877324348704",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7590894877324348704/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7590894877324348704.mp4",
+      "hasVideo": true,
+      "caption": "Nghe xong tự khắc mood lên cao 🚀"
+    },
+    {
+      "id": "7591299644039220513",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7591299644039220513/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7591299644039220513.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7591632765783690529",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7591632765783690529/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7591632765783690529.mp4",
+      "hasVideo": true,
+      "caption": "Save để nghe lại lúc cần cheer up nha 🔖"
+    },
+    {
+      "id": "7591989873502997793",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7591989873502997793/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7591989873502997793.mp4",
+      "hasVideo": true,
+      "caption": "Fruity flavor, fruity sound 🍉"
+    },
+    {
+      "id": "7592370310217878817",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7592370310217878817/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7592370310217878817.mp4",
+      "hasVideo": true,
+      "caption": "Fruity flavor, fruity sound 🍉"
+    },
+    {
+      "id": "7592749221330046241",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7592749221330046241/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7592749221330046241.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7593060002051525920",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7593060002051525920/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7593060002051525920.mp4",
+      "hasVideo": true,
+      "caption": "Fruity vibes only 🍓"
+    },
+    {
+      "id": "7593419104975932704",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7593419104975932704/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7593419104975932704.mp4",
+      "hasVideo": true,
+      "caption": "Nghe xong tự khắc mood lên cao 🚀"
+    },
+    {
+      "id": "7593866740463881505",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7593866740463881505/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7593866740463881505.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — màu sắc trong từng nốt nhạc 🍊🎵"
+    },
+    {
+      "id": "7594571561408007456",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7594571561408007456/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7594571561408007456.mp4",
+      "hasVideo": true,
+      "caption": "Fruity vibes only 🍓"
+    },
+    {
+      "id": "7594968315198541089",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7594968315198541089/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7594968315198541089.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7595329172180831521",
+      "coverUrl": null,
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7595329172180831521.mp4",
+      "hasVideo": true,
+      "coverError": "Resource already exists. Verify the resource information and try again.",
+      "caption": "Fruity Music — sweet, fresh, addictive 🍑"
+    },
+    {
+      "id": "7595718280262765857",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7595718280262765857/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7595718280262765857.mp4",
+      "hasVideo": true,
+      "caption": "Playlist cho buổi sáng tươi mới 🌞"
+    },
+    {
+      "id": "7596084028780858657",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7596084028780858657/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7596084028780858657.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7596406287559052576",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7596406287559052576/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7596406287559052576.mp4",
+      "hasVideo": true,
+      "caption": "Mỗi bài nhạc là một màu sắc mới 🌈"
+    },
+    {
+      "id": "7596822764376362272",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7596822764376362272/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7596822764376362272.mp4",
+      "hasVideo": true,
+      "caption": "Playlist cho buổi sáng tươi mới 🌞"
+    },
+    {
+      "id": "7597183211281730848",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7597183211281730848/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7597183211281730848.mp4",
+      "hasVideo": true,
+      "caption": "Mỗi bài nhạc là một màu sắc mới 🌈"
+    },
+    {
+      "id": "7597569039057161504",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7597569039057161504/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7597569039057161504.mp4",
+      "hasVideo": true,
+      "caption": "Follow Fruity Music để nhận nhạc hay mỗi ngày 🔔"
+    },
+    {
+      "id": "7598299787816897824",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7598299787816897824/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7598299787816897824.mp4",
+      "hasVideo": true,
+      "caption": "Save để nghe lại lúc cần cheer up nha 🔖"
+    },
+    {
+      "id": "7598704099760016672",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7598704099760016672/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7598704099760016672.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7599041373941140769",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7599041373941140769/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7599041373941140769.mp4",
+      "hasVideo": true,
+      "caption": "Mỗi bài nhạc là một màu sắc mới 🌈"
+    },
+    {
+      "id": "7599311818699410720",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7599311818699410720/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7599311818699410720.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7599723584944131360",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7599723584944131360/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7599723584944131360.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7600082787885927713",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7600082787885927713/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7600082787885927713.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7600453607925746977",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7600453607925746977/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7600453607925746977.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — sweet, fresh, addictive 🍑"
+    },
+    {
+      "id": "7600877963759947040",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7600877963759947040/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7600877963759947040.mp4",
+      "hasVideo": true,
+      "caption": "Fresh beats for a fresh day 🍋✨"
+    },
+    {
+      "id": "7601286411500768545",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7601286411500768545/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7601286411500768545.mp4",
+      "hasVideo": true,
+      "caption": "Nghe nhạc Fruity để ngày vui hơn 🎶"
+    },
+    {
+      "id": "7601941501534326049",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7601941501534326049/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7601941501534326049.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7602380786729225504",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7602380786729225504/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7602380786729225504.mp4",
+      "hasVideo": true,
+      "caption": "Nghe xong tự khắc mood lên cao 🚀"
+    },
+    {
+      "id": "7602750927736507681",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7602750927736507681/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7602750927736507681.mp4",
+      "hasVideo": true,
+      "caption": "Playlist cho buổi sáng tươi mới 🌞"
+    },
+    {
+      "id": "7603056710072257825",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7603056710072257825/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7603056710072257825.mp4",
+      "hasVideo": true,
+      "caption": "Nghe nhạc Fruity để ngày vui hơn 🎶"
+    },
+    {
+      "id": "7603476895077764385",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7603476895077764385/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7603476895077764385.mp4",
+      "hasVideo": true,
+      "caption": "Fresh beats for a fresh day 🍋✨"
+    },
+    {
+      "id": "7604170091088907553",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7604170091088907553/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7604170091088907553.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — màu sắc trong từng nốt nhạc 🍊🎵"
+    },
+    {
+      "id": "7604542809403706656",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7604542809403706656/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7604542809403706656.mp4",
+      "hasVideo": true,
+      "caption": "Fruity flavor, fruity sound 🍉"
+    },
+    {
+      "id": "7604914165303528736",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7604914165303528736/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7604914165303528736.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7605331792052096288",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7605331792052096288/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7605331792052096288.mp4",
+      "hasVideo": true,
+      "caption": "Nghe nhạc Fruity để ngày vui hơn 🎶"
+    },
+    {
+      "id": "7605729141375241505",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7605729141375241505/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7605729141375241505.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7606076141547310368",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7606076141547310368/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7606076141547310368.mp4",
+      "hasVideo": true,
+      "caption": "Follow Fruity Music để nhận nhạc hay mỗi ngày 🔔"
+    },
+    {
+      "id": "7606435682839530784",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7606435682839530784/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7606435682839530784.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7607149735681559841",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7607149735681559841/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7607149735681559841.mp4",
+      "hasVideo": true,
+      "caption": "Playlist cho buổi sáng tươi mới 🌞"
+    },
+    {
+      "id": "7607546620527250720",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7607546620527250720/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7607546620527250720.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — màu sắc trong từng nốt nhạc 🍊🎵"
+    },
+    {
+      "id": "7607867564105993505",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7607867564105993505/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7607867564105993505.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7608267880500579617",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7608267880500579617/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7608267880500579617.mp4",
+      "hasVideo": true,
+      "caption": "Mỗi bài nhạc là một màu sắc mới 🌈"
+    },
+    {
+      "id": "7608614302269918496",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7608614302269918496/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7608614302269918496.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7609433677860228384",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7609433677860228384/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7609433677860228384.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7609800920704093472",
+      "coverUrl": null,
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7609800920704093472.mp4",
+      "hasVideo": true,
+      "coverError": "Resource already exists. Verify the resource information and try again.",
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7610156070740217120",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7610156070740217120/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7610156070740217120.mp4",
+      "hasVideo": true,
+      "caption": "Save để nghe lại lúc cần cheer up nha 🔖"
+    },
+    {
+      "id": "7610525492076186912",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7610525492076186912/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7610525492076186912.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — sweet, fresh, addictive 🍑"
+    },
+    {
+      "id": "7610862988186094881",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7610862988186094881/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7610862988186094881.mp4",
+      "hasVideo": true,
+      "caption": "Fruity flavor, fruity sound 🍉"
+    },
+    {
+      "id": "7611607237953375521",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7611607237953375521/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7611607237953375521.mp4",
+      "hasVideo": true,
+      "caption": "Fruity flavor, fruity sound 🍉"
+    },
+    {
+      "id": "7611925384761740576",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7611925384761740576/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7611925384761740576.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7612338227738856736",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7612338227738856736/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7612338227738856736.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — màu sắc trong từng nốt nhạc 🍊🎵"
+    },
+    {
+      "id": "7612703915989044513",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7612703915989044513/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7612703915989044513.mp4",
+      "hasVideo": true,
+      "caption": "Nghe xong tự khắc mood lên cao 🚀"
+    },
+    {
+      "id": "7613123173818584352",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7613123173818584352/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7613123173818584352.mp4",
+      "hasVideo": true,
+      "caption": "Nghe xong tự khắc mood lên cao 🚀"
+    },
+    {
+      "id": "7613862247722470689",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7613862247722470689/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7613862247722470689.mp4",
+      "hasVideo": true,
+      "caption": "Mỗi bài nhạc là một màu sắc mới 🌈"
+    },
+    {
+      "id": "7614213409680166176",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7614213409680166176/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7614213409680166176.mp4",
+      "hasVideo": true,
+      "caption": "Fruity flavor, fruity sound 🍉"
+    },
+    {
+      "id": "7614619876832922912",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7614619876832922912/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7614619876832922912.mp4",
+      "hasVideo": true,
+      "caption": "Save để nghe lại lúc cần cheer up nha 🔖"
+    },
+    {
+      "id": "7614940985126063393",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7614940985126063393/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7614940985126063393.mp4",
+      "hasVideo": true,
+      "caption": "Playlist cho buổi sáng tươi mới 🌞"
+    },
+    {
+      "id": "7615310835308563745",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7615310835308563745/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7615310835308563745.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — sweet, fresh, addictive 🍑"
+    },
+    {
+      "id": "7615698975517134113",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7615698975517134113/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7615698975517134113.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7616069781761821985",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7616069781761821985/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7616069781761821985.mp4",
+      "hasVideo": true,
+      "caption": "Nghe xong tự khắc mood lên cao 🚀"
+    },
+    {
+      "id": "7616408399885929760",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7616408399885929760/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7616408399885929760.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7616817589121043744",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7616817589121043744/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7616817589121043744.mp4",
+      "hasVideo": true,
+      "caption": "Nghe nhạc Fruity để ngày vui hơn 🎶"
+    },
+    {
+      "id": "7617184243948686625",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7617184243948686625/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7617184243948686625.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — sweet, fresh, addictive 🍑"
+    },
+    {
+      "id": "7617511523765718305",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7617511523765718305/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7617511523765718305.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7617907987092344096",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7617907987092344096/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7617907987092344096.mp4",
+      "hasVideo": true,
+      "caption": "Follow Fruity Music để nhận nhạc hay mỗi ngày 🔔"
+    },
+    {
+      "id": "7618292518337187104",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7618292518337187104/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7618292518337187104.mp4",
+      "hasVideo": true,
+      "caption": "Nghe nhạc Fruity để ngày vui hơn 🎶"
+    },
+    {
+      "id": "7618649037318671649",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7618649037318671649/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7618649037318671649.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — màu sắc trong từng nốt nhạc 🍊🎵"
+    },
+    {
+      "id": "7619039897218731297",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7619039897218731297/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7619039897218731297.mp4",
+      "hasVideo": true,
+      "caption": "Save để nghe lại lúc cần cheer up nha 🔖"
+    },
+    {
+      "id": "7619366300648787232",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7619366300648787232/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7619366300648787232.mp4",
+      "hasVideo": true,
+      "caption": "Mỗi bài nhạc là một màu sắc mới 🌈"
+    },
+    {
+      "id": "7619693192572603680",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7619693192572603680/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7619693192572603680.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — màu sắc trong từng nốt nhạc 🍊🎵"
+    },
+    {
+      "id": "7620250745815764256",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7620250745815764256/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7620250745815764256.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — sweet, fresh, addictive 🍑"
+    },
+    {
+      "id": "7620603569678388512",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7620603569678388512/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7620603569678388512.mp4",
+      "hasVideo": true,
+      "caption": "Chill nhạc mỗi ngày cùng Fruity Music 🎧"
+    },
+    {
+      "id": "7621189373526052128",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7621189373526052128/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7621189373526052128.mp4",
+      "hasVideo": true,
+      "caption": "Thả tim nếu bạn thích bài này nhé ❤️"
+    },
+    {
+      "id": "7621561326183157024",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7621561326183157024/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7621561326183157024.mp4",
+      "hasVideo": true,
+      "caption": "Fruity flavor, fruity sound 🍉"
+    },
+    {
+      "id": "7621960151842540833",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7621960151842540833/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7621960151842540833.mp4",
+      "hasVideo": true,
+      "caption": "Save để nghe lại lúc cần cheer up nha 🔖"
+    },
+    {
+      "id": "7622343453439053089",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7622343453439053089/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7622343453439053089.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — sweet, fresh, addictive 🍑"
+    },
+    {
+      "id": "7622706005775797536",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7622706005775797536/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7622706005775797536.mp4",
+      "hasVideo": true,
+      "caption": "Fruity flavor, fruity sound 🍉"
+    },
+    {
+      "id": "7623089540302933281",
+      "coverUrl": "https://imagedelivery.net/Pw2WK7nSZVnnzk4LKnBfXQ/7623089540302933281/public",
+      "videoUrl": "https://static.aivungtau.com/tiktok/fruity-music/7623089540302933281.mp4",
+      "hasVideo": true,
+      "caption": "Fruity Music — sweet, fresh, addictive 🍑"
+    }
+  ]
+}

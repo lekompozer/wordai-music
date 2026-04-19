@@ -70,14 +70,7 @@ export default function YoutubeShortCard({
 
             {/* Right side controls — only rendered when this card is active */}
             {isActive && (
-                <div className="absolute right-3 bottom-32 flex flex-col gap-3 items-center z-30">
-                    <button
-                        onClick={onToggleMute}
-                        className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-                        aria-label={isMuted ? 'Unmute' : 'Mute'}
-                    >
-                        {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                    </button>
+                <div className="absolute right-3 bottom-28 flex flex-col gap-3 items-center z-30">
                     {onSave && (
                         <button
                             onClick={onSave}
@@ -102,6 +95,14 @@ export default function YoutubeShortCard({
                     >
                         <ExternalLink className="w-4 h-4" />
                     </a>
+                    {/* Volume — at bottom for easy thumb access */}
+                    <button
+                        onClick={onToggleMute}
+                        className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+                        aria-label={isMuted ? 'Unmute' : 'Mute'}
+                    >
+                        {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                    </button>
                 </div>
             )}
         </div>
