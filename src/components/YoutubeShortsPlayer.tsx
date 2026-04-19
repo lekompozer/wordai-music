@@ -244,9 +244,21 @@ export default function YoutubeShortsPlayer({
         if (el && snapRef.current) snapRef.current.scrollTop = next * snapRef.current.clientHeight;
     }, []);
 
+    // ── Windows wheel scroll fix (iframe captures native wheel events) ───────
+    const handleOuterWheel = useCallback((e: React.WheelEvent) => {
+        const container = snapRef.current;
+        if (!container) return;
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 1 : -1;
+        const next = Math.max(0, Math.min(itemsRef.current.length - 1, activeIndexRef.current + delta));
+        if (next !== activeIndexRef.current) {
+            container.scrollTop = next * container.clientHeight;
+        }
+    }, []);
+
     // ── Render ──────────────────────────────────────────────────────────────────
     return (
-        <div className="relative h-full min-h-0 bg-black">
+        <div className="relative h-full min-h-0 bg-black" onWheel={handleOuterWheel}>
             {headerOverlay}
 
 

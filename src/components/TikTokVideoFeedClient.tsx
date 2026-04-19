@@ -400,7 +400,7 @@ export default function TikTokVideoFeedClient({
 
                 {/* 9:16 portrait container — centered in the panel */}
                 <div
-                    className="relative overflow-hidden"
+                    className="relative overflow-hidden bg-black"
                     style={{
                         aspectRatio: '9 / 16',
                         height: '100%',

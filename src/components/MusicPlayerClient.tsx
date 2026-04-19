@@ -1700,7 +1700,7 @@ export default function MusicPlayerClient() {
         // Use the always-present <video> element instead of <audio>.
         // The AudioVisualizer is skipped for asset:// tracks (createMediaElementSource
         // is blocked by WKWebView CORS for asset:// → audio silenced if we try it).
-        if (track.isVideo && track.audioUrl.startsWith('asset:')) {
+        if (track.isVideo && (track.audioUrl.startsWith('asset:') || track.audioUrl.startsWith('https://asset.'))) {
             if (audio) { audio.pause(); audio.src = ''; }
             setLocalVideoVisible(true);
             setAudioEl(null); // no visualizer for video tracks
@@ -2021,7 +2021,7 @@ export default function MusicPlayerClient() {
     useEffect(() => {
         // Local video track: control the video element
         const activeTrack = slides[activeIndex];
-        if (activeTrack?.isVideo && activeTrack.audioUrl?.startsWith('asset:') && localVideoRef.current) {
+        if (activeTrack?.isVideo && (activeTrack.audioUrl?.startsWith('asset:') || activeTrack.audioUrl?.startsWith('https://asset.')) && localVideoRef.current) {
             const v = localVideoRef.current;
             if (isPlaying) {
                 void v.play()
@@ -2448,7 +2448,7 @@ export default function MusicPlayerClient() {
 
     const handleSeek = useCallback((time: number) => {
         const activeTrack = slides[activeIndex];
-        if (activeTrack?.isVideo && activeTrack.audioUrl?.startsWith('asset:') && localVideoRef.current) {
+        if (activeTrack?.isVideo && (activeTrack.audioUrl?.startsWith('asset:') || activeTrack.audioUrl?.startsWith('https://asset.')) && localVideoRef.current) {
             localVideoRef.current.currentTime = time;
             setCurrentTime(time);
         } else if (audioRef.current) {
@@ -2788,14 +2788,6 @@ export default function MusicPlayerClient() {
                             >
                                 <Minimize2 className="w-4 h-4" />
                             </button>
-                            {/* VI/EN language toggle — right side, same row as minimize */}
-                            <button
-                                className="absolute top-4 right-4 z-30 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-semibold hover:bg-black/80 transition-colors border border-white/15"
-                                onClick={toggleLanguage}
-                                title="Toggle language"
-                            >
-                                {isVietnamese ? 'VI' : 'EN'}
-                            </button>
                             <div
                                 className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none"
                                 style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 55%, transparent 100%)', padding: '56px 24px 24px' }}
@@ -2857,14 +2849,6 @@ export default function MusicPlayerClient() {
                                 onClick={() => setYtFullMode(false)}
                             >
                                 <Minimize2 className="w-4 h-4" />
-                            </button>
-                            {/* VI/EN language toggle — right side */}
-                            <button
-                                className="absolute top-4 right-4 z-30 px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-semibold hover:bg-black/80 transition-colors border border-white/15"
-                                onClick={toggleLanguage}
-                                title="Toggle language"
-                            >
-                                {isVietnamese ? 'VI' : 'EN'}
                             </button>
                             <div
                                 className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none"
