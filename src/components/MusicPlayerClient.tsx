@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
     Music2, Heart, Bookmark, BookmarkCheck, Share2,
-    Volume2, VolumeX, ChevronRight, Play, Pause, Menu, Plus, X, ListMusic, Shuffle,
+    Volume2, VolumeX, ChevronRight, ChevronUp, ChevronDown, Play, Pause, Menu, Plus, X, ListMusic, Shuffle,
     Maximize2, Minimize2, HardDrive, PanelLeftOpen, PanelLeftClose, Rewind,
 } from 'lucide-react';
 import { useTheme, useLanguage } from '@/contexts/AppContext';
@@ -2788,6 +2788,24 @@ export default function MusicPlayerClient() {
                             >
                                 <Minimize2 className="w-4 h-4" />
                             </button>
+                            {/* Prev / Next nav buttons — Windows-safe scroll (wheel on iframe doesn't bubble) */}
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-30">
+                                <button
+                                    className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors border border-white/15 disabled:opacity-30"
+                                    disabled={activeIndex <= 0}
+                                    onClick={() => feedRef.current?.scrollBy({ top: -feedRef.current.clientHeight, behavior: 'smooth' })}
+                                    aria-label="Previous track"
+                                >
+                                    <ChevronUp className="w-5 h-5" />
+                                </button>
+                                <button
+                                    className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors border border-white/15"
+                                    onClick={() => feedRef.current?.scrollBy({ top: feedRef.current.clientHeight, behavior: 'smooth' })}
+                                    aria-label="Next track"
+                                >
+                                    <ChevronDown className="w-5 h-5" />
+                                </button>
+                            </div>
                             <div
                                 className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none"
                                 style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 55%, transparent 100%)', padding: '56px 24px 24px' }}
@@ -2850,6 +2868,24 @@ export default function MusicPlayerClient() {
                             >
                                 <Minimize2 className="w-4 h-4" />
                             </button>
+                            {/* Prev / Next nav buttons — Windows-safe scroll */}
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-30">
+                                <button
+                                    className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors border border-white/15 disabled:opacity-30"
+                                    disabled={activeIndex <= 0}
+                                    onClick={() => feedRef.current?.scrollBy({ top: -feedRef.current.clientHeight, behavior: 'smooth' })}
+                                    aria-label="Previous track"
+                                >
+                                    <ChevronUp className="w-5 h-5" />
+                                </button>
+                                <button
+                                    className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/80 transition-colors border border-white/15"
+                                    onClick={() => feedRef.current?.scrollBy({ top: feedRef.current.clientHeight, behavior: 'smooth' })}
+                                    aria-label="Next track"
+                                >
+                                    <ChevronDown className="w-5 h-5" />
+                                </button>
+                            </div>
                             <div
                                 className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none"
                                 style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.5) 55%, transparent 100%)', padding: '56px 24px 24px' }}
