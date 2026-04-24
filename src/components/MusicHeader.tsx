@@ -148,6 +148,7 @@ export default function MusicHeader() {
     const { isDark, accentIndex, setAccentIndex } = useTheme();
     const { isVietnamese, toggleLanguage } = useLanguage();
     const [signingIn, setSigningIn] = useState(false);
+    const [avatarError, setAvatarError] = useState(false);
     const [donateOpen, setDonateOpen] = useState(false);
     const [pickerOpen, setPickerOpen] = useState(false);
     const pickerRef = useRef<HTMLDivElement>(null);
@@ -202,6 +203,7 @@ export default function MusicHeader() {
 
     const handleLogin = async () => {
         setSigningIn(true);
+        setAvatarError(false);
         try {
             await signIn();
         } finally {
@@ -327,15 +329,18 @@ export default function MusicHeader() {
                         <div className="w-6 h-6 rounded-full bg-white/10 animate-pulse" />
                     ) : user ? (
                         <div className="flex items-center gap-2">
-                            {user.photoURL ? (
+                            {user.photoURL && !avatarError ? (
                                 <img
                                     src={user.photoURL}
                                     alt={user.displayName ?? 'User'}
                                     className="w-6 h-6 rounded-full object-cover border border-white/20"
+                                    onError={() => setAvatarError(true)}
                                 />
                             ) : (
                                 <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center">
-                                    <User className="w-3.5 h-3.5 text-white" />
+                                    <span className="text-xs font-semibold text-white">
+                                        {(user.displayName ?? user.email ?? 'U')[0].toUpperCase()}
+                                    </span>
                                 </div>
                             )}
                             <span className="text-xs text-gray-300 max-w-[100px] truncate hidden sm:block">

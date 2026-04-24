@@ -2397,6 +2397,9 @@ export default function MusicPlayerClient() {
     const handleSelectChannel = useCallback((slug: ChannelSlug) => {
         if (slug === selectedChannel) return;
 
+        // Close Shorts/TikTok panel when user picks a new channel
+        setSubTab('library');
+
         // Unlock audio contexts synchronously to satisfy Safari/WKWebView gesture requirements
         // BEFORE any async fetching or state batching drops the user interaction token.
         if (audioRef.current) {
@@ -2476,6 +2479,9 @@ export default function MusicPlayerClient() {
     void _activeChannelMeta; // used by future code
 
     const handlePlayTracks = useCallback((tracks: SidebarTrack[], startIndex = 0, playlistId?: string, playlistName?: string) => {
+        // Close Shorts/TikTok panel when user picks a track
+        setSubTab('library');
+
         // Unlock audio context synchronously immediately on click
         if (tracks.length > 0 && tracks[startIndex]?.source !== 'youtube' && tracks[startIndex]?.source !== 'facebook') {
             if (audioRef.current) {
