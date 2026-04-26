@@ -132,7 +132,7 @@ jobs:
           $maxRetries = 5
           for ($i = 1; $i -le $maxRetries; $i++) {
             try {
-              Write-Host "Attempt $i/$maxRetries: Downloading WiX..."
+              Write-Host "Attempt $i/${maxRetries}: Downloading WiX..."
               Invoke-WebRequest `
                 "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip" `
                 -OutFile "$env:RUNNER_TEMP\wix.zip" `
@@ -142,7 +142,7 @@ jobs:
               break
             } catch {
               Write-Host "❌ Attempt $i failed: $_"
-              if ($i -eq $maxRetries) { throw "All $maxRetries download attempts failed." }
+              if ($i -eq $maxRetries) { throw "All ${maxRetries} download attempts failed." }
               Start-Sleep -Seconds 30
             }
           }
