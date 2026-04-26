@@ -342,6 +342,12 @@ export default function MusicSidebar({
     const [channelStats, setChannelStats] = useState<Record<string, ChannelLikeStats>>({});
     const [likingChannelId, setLikingChannelId] = useState<string | null>(null);
     const [reportedChannelId, setReportedChannelId] = useState<string | null>(null);
+    // Report channel modal
+    const [reportModal, setReportModal] = useState<{ id: string; name: string } | null>(null);
+    const [reportReason, setReportReason] = useState('');
+    const [reportDetails, setReportDetails] = useState('');
+    const [reportSubmitting, setReportSubmitting] = useState(false);
+    const [reportSubmitted, setReportSubmitted] = useState(false);
     // Total play counts per channel (loaded lazily when channel is expanded)
     const [channelTotalPlays, setChannelTotalPlays] = useState<Record<string, number>>({});
     const handleChannelTotalPlays = useCallback((slug: string, total: number) => {
@@ -1470,23 +1476,9 @@ export default function MusicSidebar({
                     null
                 )
                 : null;
-        // Hot Channels: all src combined, sorted by live likes, top 5
-        const allSrcChannels: (SidebarChannel & { totalLikes: number })[] = [
-            ...channels.map(ch => ({ ...ch, totalLikes: channelStats[ch.slug]?.totalLikes ?? 0 })),
-            ...publicChannels.map(pub => ({
-                slug: pub.id,
-                name: pub.name,
-                label: pub.description || 'community channel',
-                accent: pub.accent,
-                // prefer live channelStats if available (updated after likes), fallback to pub.totalLikes
-                totalLikes: channelStats[pub.id]?.totalLikes ?? pub.totalLikes,
-            })),
-        ];
-        // Dedup by slug (community channels already in system list are skipped)
-        const seen = new Set<string>();
-        const dedupedChannels = allSrcChannels.filter(c => { if (seen.has(c.slug)) return false; seen.add(c.slug); return true; });
-        const hotChannels = dedupedChannels.sort((a, b) => b.totalLikes - a.totalLikes).slice(0, 5);
-        const newSystemChannels = channels.slice(5);
+        // Hot Channels: system channels only (sorted by likes)
+        const hotChannels = channels.map(ch => ({ ...ch, totalLikes: channelStats[ch.slug]?.totalLikes ?? 0 }));
+        const newSystemChannels: typeof hotChannels = [];
         return (
             <div className="flex flex-col flex-1 overflow-hidden">
                 {/* Channel list */}
@@ -1583,10 +1575,10 @@ export default function MusicSidebar({
                                                 <button
                                                     onClick={e => {
                                                         e.stopPropagation();
-                                                        if (reportedChannelId === pub.id) return;
-                                                        setReportedChannelId(pub.id);
-                                                        window.open(`mailto:hello@wynai.pro?subject=${encodeURIComponent(`[Report] Channel: ${pub.name}`)}&body=${encodeURIComponent(`I would like to report the channel "${pub.name}" (ID: ${pub.id}) for the following reason:\n\n`)}`, '_blank');
-                                                        setTimeout(() => setReportedChannelId(null), 3000);
+                                                        setReportReason('');
+                                                        setReportDetails('');
+                                                        setReportSubmitted(false);
+                                                        setReportModal({ id: pub.id, name: pub.name });
                                                     }}
                                                     title={isVietnamese ? 'Báo cáo kênh này' : 'Report this channel'}
                                                     className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${reportedChannelId === pub.id
@@ -2965,6 +2957,127 @@ export default function MusicSidebar({
                                     : (isVietnamese ? 'Đăng kênh' : 'Publish')}
                             </button>
                         </div>
+                    </div>
+                </div>,
+                document.body,
+            )}
+
+            {/* ── Report Channel Modal ──────────────────────────────────── */}
+            {reportModal && typeof window !== 'undefined' && createPortal(
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm"
+                    onClick={() => { setReportModal(null); setReportSubmitted(false); }}
+                >
+                    <div
+                        className={`w-full max-w-sm max-h-[90vh] flex flex-col rounded-2xl shadow-2xl ${effectiveDark ? 'bg-[#0b1228] ring-1 ring-white/10' : 'bg-white ring-1 ring-slate-200'}`}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: effectiveDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.7)' }}>
+                            <div className="flex items-center gap-2">
+                                <Flag className="w-4 h-4 text-orange-400" />
+                                <span className={`font-semibold text-sm ${effectiveDark ? 'text-white' : 'text-slate-900'}`}>
+                                    {isVietnamese ? 'Báo cáo kênh' : 'Report Channel'}
+                                </span>
+                            </div>
+                            <button onClick={() => { setReportModal(null); setReportSubmitted(false); }} className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${effectiveDark ? 'text-white/60 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        {/* Body */}
+                        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+                            {reportSubmitted ? (
+                                <div className="text-center py-4">
+                                    <div className="w-10 h-10 rounded-full bg-green-500/15 flex items-center justify-center mx-auto mb-3">
+                                        <Check className="w-5 h-5 text-green-400" />
+                                    </div>
+                                    <p className={`text-sm font-medium ${effectiveDark ? 'text-white' : 'text-slate-900'}`}>
+                                        {isVietnamese ? 'Đã gửi báo cáo' : 'Report submitted'}
+                                    </p>
+                                    <p className={`text-xs mt-1 ${effectiveDark ? 'text-white/50' : 'text-slate-500'}`}>
+                                        {isVietnamese ? 'Cảm ơn bạn đã phản hồi.' : 'Thank you for your feedback.'}
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className={`text-xs ${effectiveDark ? 'text-white/50' : 'text-slate-500'}`}>
+                                        {isVietnamese ? `Báo cáo kênh: ` : `Reporting: `}
+                                        <span className={`font-medium ${effectiveDark ? 'text-white/80' : 'text-slate-700'}`}>{reportModal.name}</span>
+                                    </p>
+                                    <div>
+                                        <label className={`block text-xs font-medium mb-1.5 ${effectiveDark ? 'text-white/60' : 'text-slate-600'}`}>
+                                            {isVietnamese ? 'Lý do *' : 'Reason *'}
+                                        </label>
+                                        <div className="relative">
+                                            <select
+                                                value={reportReason}
+                                                onChange={e => setReportReason(e.target.value)}
+                                                className={`w-full px-3 pr-8 py-2 rounded-xl text-sm appearance-none outline-none transition-all ${effectiveDark ? 'bg-white/[0.06] text-white border border-white/10 focus:border-white/30' : 'bg-slate-50 text-slate-900 border border-slate-200 focus:border-slate-400'}`}
+                                            >
+                                                <option value="">{isVietnamese ? '-- Chọn lý do --' : '-- Select reason --'}</option>
+                                                <option value="inappropriate">{isVietnamese ? 'Nội dung không phù hợp' : 'Inappropriate content'}</option>
+                                                <option value="spam">{isVietnamese ? 'Spam hoặc lừa đảo' : 'Spam or scam'}</option>
+                                                <option value="copyright">{isVietnamese ? 'Vi phạm bản quyền' : 'Copyright violation'}</option>
+                                                <option value="offensive">{isVietnamese ? 'Nội dung xúc phạm' : 'Offensive content'}</option>
+                                                <option value="other">{isVietnamese ? 'Lý do khác' : 'Other'}</option>
+                                            </select>
+                                            <div className={`absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none ${effectiveDark ? 'text-white/40' : 'text-slate-400'}`}>
+                                                <ChevronDown className="w-3.5 h-3.5" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className={`block text-xs font-medium mb-1.5 ${effectiveDark ? 'text-white/60' : 'text-slate-600'}`}>
+                                            {isVietnamese ? 'Chi tiết (tuỳ chọn)' : 'Details (optional)'}
+                                        </label>
+                                        <textarea
+                                            value={reportDetails}
+                                            onChange={e => setReportDetails(e.target.value)}
+                                            rows={3}
+                                            maxLength={500}
+                                            placeholder={isVietnamese ? 'Mô tả thêm...' : 'Additional description...'}
+                                            className={`w-full px-3 py-2 rounded-xl text-sm resize-none outline-none transition-all ${effectiveDark ? 'bg-white/[0.06] text-white placeholder-white/30 border border-white/10 focus:border-white/30' : 'bg-slate-50 text-slate-900 placeholder-slate-400 border border-slate-200 focus:border-slate-400'}`}
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                        {/* Footer */}
+                        {!reportSubmitted && (
+                            <div className="flex-shrink-0 flex justify-end gap-2 px-5 py-4 border-t" style={{ borderColor: effectiveDark ? 'rgba(255,255,255,0.08)' : 'rgba(203,213,225,0.7)' }}>
+                                <button
+                                    onClick={() => setReportModal(null)}
+                                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${effectiveDark ? 'text-white/70 hover:bg-white/[0.08]' : 'text-slate-600 hover:bg-slate-100'}`}
+                                >
+                                    {isVietnamese ? 'Hủy' : 'Cancel'}
+                                </button>
+                                <button
+                                    disabled={!reportReason || reportSubmitting}
+                                    onClick={async () => {
+                                        if (!reportReason || !user) return;
+                                        setReportSubmitting(true);
+                                        try {
+                                            const token = await user.getIdToken();
+                                            await fetch('https://db-wordai-community.hoangnguyen358888.workers.dev/api/music/report-channel', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                                body: JSON.stringify({ channelId: reportModal.id, channelName: reportModal.name, reason: reportReason, details: reportDetails }),
+                                            });
+                                            setReportedChannelId(reportModal.id);
+                                            setReportSubmitted(true);
+                                            setTimeout(() => { setReportModal(null); setReportedChannelId(null); setReportSubmitted(false); }, 2000);
+                                        } catch {
+                                            // silent fail
+                                        } finally {
+                                            setReportSubmitting(false);
+                                        }
+                                    }}
+                                    className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 disabled:opacity-50 transition-colors"
+                                >
+                                    {reportSubmitting ? '...' : (isVietnamese ? 'Gửi báo cáo' : 'Submit report')}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>,
                 document.body,

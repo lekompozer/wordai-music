@@ -1,6 +1,6 @@
 [package]
 name = "wordai-music"
-version = "0.1.8"
+version = "0.1.9"
 description = "WordAI Music — Free unlimited music player"
 authors = ["WordAI"]
 license = ""

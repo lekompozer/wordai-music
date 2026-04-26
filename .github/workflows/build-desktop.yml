@@ -114,6 +114,49 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'https://ai.wordai.pro' }}
         run: npm run build
 
+      # ── Pre-install WiX toolset (Windows) ────────────────────────────────
+      - name: Cache WiX toolset
+        if: matrix.platform == 'windows-latest'
+        id: cache-wix
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}\WixTools
+          key: wix-3.14.1
+
+      - name: Download WiX toolset
+        if: matrix.platform == 'windows-latest' && steps.cache-wix.outputs.cache-hit != 'true'
+        shell: powershell
+        run: |
+          $wixDir = "$env:RUNNER_TEMP\WixTools"
+          New-Item -ItemType Directory -Force -Path $wixDir | Out-Null
+          $maxRetries = 5
+          for ($i = 1; $i -le $maxRetries; $i++) {
+            try {
+              Write-Host "Attempt $i/$maxRetries: Downloading WiX..."
+              Invoke-WebRequest `
+                "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip" `
+                -OutFile "$env:RUNNER_TEMP\wix.zip" `
+                -TimeoutSec 120
+              Expand-Archive "$env:RUNNER_TEMP\wix.zip" -DestinationPath $wixDir -Force
+              Write-Host "✅ WiX downloaded OK"
+              break
+            } catch {
+              Write-Host "❌ Attempt $i failed: $_"
+              if ($i -eq $maxRetries) { throw "All $maxRetries download attempts failed." }
+              Start-Sleep -Seconds 30
+            }
+          }
+
+      - name: Install WiX to Tauri cache dir
+        if: matrix.platform == 'windows-latest'
+        shell: powershell
+        run: |
+          $src = "$env:RUNNER_TEMP\WixTools"
+          $dst = "$env:LOCALAPPDATA\tauri\WixTools"
+          New-Item -ItemType Directory -Force -Path $dst | Out-Null
+          Copy-Item "$src\*" -Destination $dst -Recurse -Force
+          Write-Host "✅ WiX tools installed to: $dst"
+
       # ── Build Tauri desktop app ───────────────────────────────────────────
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
