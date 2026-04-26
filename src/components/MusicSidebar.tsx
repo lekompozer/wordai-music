@@ -6,7 +6,7 @@ import { HomeSidebarCollapsedCtx } from './HomeShell';
 import {
     X, Search, Music2, AudioWaveform, Shuffle, ChevronDown, ChevronRight, ChevronLeft, Play, Plus,
     Trash2, ListMusic, Youtube, Link as LinkIcon, Loader2,
-    Check, PlayCircle, Upload, Radio, Flame, Sparkles, Globe, Heart,
+    Check, PlayCircle, Upload, Radio, Flame, Sparkles, Globe, Heart, Flag,
     HardDrive, FolderOpen, FilePlus2,
 } from 'lucide-react';
 import {
@@ -341,6 +341,7 @@ export default function MusicSidebar({
     // Channel like stats (keyed by channel slug or UUID)
     const [channelStats, setChannelStats] = useState<Record<string, ChannelLikeStats>>({});
     const [likingChannelId, setLikingChannelId] = useState<string | null>(null);
+    const [reportedChannelId, setReportedChannelId] = useState<string | null>(null);
     // Total play counts per channel (loaded lazily when channel is expanded)
     const [channelTotalPlays, setChannelTotalPlays] = useState<Record<string, number>>({});
     const handleChannelTotalPlays = useCallback((slug: string, total: number) => {
@@ -1585,6 +1586,23 @@ export default function MusicSidebar({
                                                 >
                                                     <Heart className={`w-3 h-3 ${stat.hasLiked ? 'fill-current' : ''}`} />
                                                     {stat.totalLikes > 0 && <span>{stat.totalLikes}</span>}
+                                                </button>
+                                                {/* Report button */}
+                                                <button
+                                                    onClick={e => {
+                                                        e.stopPropagation();
+                                                        if (reportedChannelId === pub.id) return;
+                                                        setReportedChannelId(pub.id);
+                                                        window.open(`mailto:hello@wynai.pro?subject=${encodeURIComponent(`[Report] Channel: ${pub.name}`)}&body=${encodeURIComponent(`I would like to report the channel "${pub.name}" (ID: ${pub.id}) for the following reason:\n\n`)}`, '_blank');
+                                                        setTimeout(() => setReportedChannelId(null), 3000);
+                                                    }}
+                                                    title={isVietnamese ? 'Báo cáo kênh này' : 'Report this channel'}
+                                                    className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${reportedChannelId === pub.id
+                                                        ? 'text-orange-400 bg-orange-500/15'
+                                                        : (effectiveDark ? 'text-slate-500/60 hover:text-orange-400 hover:bg-white/[0.08]' : 'text-slate-300 hover:text-orange-500 hover:bg-slate-100')
+                                                        }`}
+                                                >
+                                                    <Flag className="w-3 h-3" />
                                                 </button>
                                                 {isSelected && (
                                                     <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: pub.accent, boxShadow: `0 0 0 4px ${pub.accent}16` }} />
