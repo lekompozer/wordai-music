@@ -178,20 +178,20 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'https://ai.wordai.pro' }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'WordAI Music ${{ github.ref_name }}'
+          releaseName: 'WynAI Music ${{ github.ref_name }}'
           releaseBody: |
-            ## WordAI Music ${{ github.ref_name }}
+            ## WynAI Music ${{ github.ref_name }}
 
             ### Download
-            - 🍎 **macOS Apple Silicon**: `WordAI-Music-mac-arm64.dmg`
-            - 🍎 **macOS Intel**: `WordAI-Music-mac-x64.dmg`
-            - 🪟 **Windows**: `WordAI-Music-windows-setup.exe`
-            - 🐧 **Linux**: `WordAI-Music-linux.AppImage`
+            - 🍎 **macOS Apple Silicon**: `WynAI-Music-mac-arm64.dmg`
+            - 🍎 **macOS Intel**: `WynAI-Music-mac-x64.dmg`
+            - 🪟 **Windows**: `WynAI-Music-setup.exe`
+            - 🐧 **Linux**: `WynAI-Music-linux.AppImage`
 
             ### Install notes (macOS)
             App is ad-hoc signed. If blocked by Gatekeeper:
             ```
-            xattr -d com.apple.quarantine /Applications/WordAI\ Music.app
+            xattr -d com.apple.quarantine /Applications/WynAI\ Music.app
             ```
           releaseDraft: true
           prerelease: false
@@ -225,8 +225,8 @@ jobs:
         run: |
           DMG=$(find src-tauri/target -name "*.dmg" 2>/dev/null | head -1)
           if [ -z "$DMG" ]; then echo "❌ No DMG found"; exit 1; fi
-          echo "📦 Uploading $DMG → desktop-music/WordAI-Music-mac-arm64.dmg"
-          aws s3 cp "$DMG" "s3://${R2_BUCKET_NAME}/desktop-music/WordAI-Music-mac-arm64.dmg" \
+          echo "📦 Uploading $DMG → desktop-music/WynAI-Music-mac-arm64.dmg"
+          aws s3 cp "$DMG" "s3://${R2_BUCKET_NAME}/desktop-music/WynAI-Music-mac-arm64.dmg" \
             --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
             --content-type "application/x-apple-diskimage" \
             --cache-control "public, max-age=3600"
@@ -245,7 +245,7 @@ jobs:
           DMG=$(find src-tauri/target -name "*.dmg" 2>/dev/null | head -1)
           if [ -z "$DMG" ]; then echo "❌ No DMG found"; exit 1; fi
           echo "📦 Uploading $DMG → desktop-music/WordAI-Music-mac-x64.dmg"
-          aws s3 cp "$DMG" "s3://${R2_BUCKET_NAME}/desktop-music/WordAI-Music-mac-x64.dmg" \
+          aws s3 cp "$DMG" "s3://${R2_BUCKET_NAME}/desktop-music/WynAI-Music-mac-x64.dmg" \
             --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
             --content-type "application/x-apple-diskimage" \
             --cache-control "public, max-age=3600"
@@ -264,9 +264,9 @@ jobs:
           EXE=$(find src-tauri/target -name "*-setup.exe" 2>/dev/null | head -1)
           if [ -z "$EXE" ]; then EXE=$(find src-tauri/target -name "*.msi" 2>/dev/null | head -1); fi
           if [ -z "$EXE" ]; then echo "❌ No Windows installer found"; exit 1; fi
-          KEY="desktop-music/WordAI-Music-windows-setup.exe"
+          KEY="desktop-music/WynAI-Music-setup.exe"
           CT="application/x-msdownload"
-          if [[ "$EXE" == *.msi ]]; then KEY="desktop-music/WordAI-Music-windows-setup.msi"; CT="application/x-msi"; fi
+          if [[ "$EXE" == *.msi ]]; then KEY="desktop-music/WynAI-Music-setup.msi"; CT="application/x-msi"; fi
           echo "📦 Uploading $EXE → $KEY"
           aws s3 cp "$EXE" "s3://${R2_BUCKET_NAME}/${KEY}" \
             --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
@@ -286,8 +286,8 @@ jobs:
         run: |
           APP=$(find src-tauri/target -name "*.AppImage" 2>/dev/null | head -1)
           if [ -z "$APP" ]; then echo "❌ No AppImage found"; exit 1; fi
-          echo "📦 Uploading $APP → desktop-music/WordAI-Music-linux.AppImage"
-          aws s3 cp "$APP" "s3://${R2_BUCKET_NAME}/desktop-music/WordAI-Music-linux.AppImage" \
+          echo "📦 Uploading $APP → desktop-music/WynAI-Music-linux.AppImage"
+          aws s3 cp "$APP" "s3://${R2_BUCKET_NAME}/desktop-music/WynAI-Music-linux.AppImage" \
             --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" \
             --content-type "application/x-executable" \
             --cache-control "public, max-age=3600"
@@ -322,10 +322,10 @@ jobs:
             "notes": "WynAI Music ${VERSION}",
             "pub_date": "${PUB_DATE}",
             "platforms": {
-              "darwin-aarch64": { "url": "${CDN}/WordAI-Music-mac-arm64.dmg" },
-              "darwin-x86_64":  { "url": "${CDN}/WordAI-Music-mac-x64.dmg" },
-              "windows-x86_64": { "url": "${CDN}/WordAI-Music-windows-setup.exe" },
-              "linux-x86_64":   { "url": "${CDN}/WordAI-Music-linux.AppImage" }
+              "darwin-aarch64": { "url": "${CDN}/WynAI-Music-mac-arm64.dmg" },
+              "darwin-x86_64":  { "url": "${CDN}/WynAI-Music-mac-x64.dmg" },
+              "windows-x86_64": { "url": "${CDN}/WynAI-Music-setup.exe" },
+              "linux-x86_64":   { "url": "${CDN}/WynAI-Music-linux.AppImage" }
             }
           }
           EOF

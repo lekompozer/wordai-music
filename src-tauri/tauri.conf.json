@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "WynAI Music",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "identifier": "pro.wordai.music",
   "build": {
     "frontendDist": "../out",
@@ -37,7 +37,7 @@
     "active": true,
     "createUpdaterArtifacts": true,
     "targets": "all",
-    "publisher": "WordAI",
+    "publisher": "WynAI",
     "category": "Music",
     "shortDescription": "Free unlimited music player — TikTok & YouTube to MP3, no ads",
     "icon": [
@@ -55,7 +55,8 @@
     "windows": {
       "wix": {},
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "displayLanguageSelector": false
       }
     }
   }
