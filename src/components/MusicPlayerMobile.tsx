@@ -41,11 +41,6 @@ function t(vi: string, en: string, isVietnamese: boolean) { return isVietnamese 
 
 const MUSIC_CHANNELS = [
     { slug: 'background-music', name: 'Background Music', label: 'm/background-music', accent: '#4f46e5' },
-    { slug: 'nhac-hot-tiktok', name: 'Nhạc Hot TikTok', label: 'm/nhac-hot-tiktok', accent: '#2563eb' },
-    { slug: 'nhacviet-tiktok', name: 'Nhạc Việt', label: 'm/nhacviet-tiktok', accent: '#0f766e' },
-    { slug: 'rap-tiktok', name: 'Rap TikTok', label: 'm/rap-tiktok', accent: '#7c3aed' },
-    { slug: 'nhac-soi-dong', name: 'Nhạc Sôi Động', label: 'm/nhac-soi-dong', accent: '#1d4ed8' },
-    { slug: 'nhac-en-chill', name: 'Nhạc Chill', label: 'm/nhac-en-chill', accent: '#4338ca' },
 ] as const;
 
 type ChannelSlug = typeof MUSIC_CHANNELS[number]['slug'] | 'playlist' | (string & {});

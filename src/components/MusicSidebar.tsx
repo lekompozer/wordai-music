@@ -836,22 +836,14 @@ export default function MusicSidebar({
     const handleTogglePublish = (pl: Playlist) => {
         if (!user) return;
         if (publishedIds.has(pl.id)) {
-            // Already published — open modal to update or unpublish
-            const existing = publicChannels.find(c => c.id === pl.id);
-            setPublishMeta({
-                name: existing?.name ?? pl.name,
-                accent: existing?.accent ?? '#4f46e5',
-                description: existing?.description ?? '',
-                genre: existing?.genre ?? 'mixed',
-                mood: existing?.mood ?? '',
-                tags: existing?.tags ?? '',
-            });
+            // Already published → unpublish immediately (no modal)
+            void handleUnpublish(pl);
         } else {
-            // Not published — open modal to fill metadata
+            // Not published → open modal to fill metadata
             setPublishMeta({ name: pl.name, accent: '#4f46e5', description: '', genre: 'mixed', mood: '', tags: '' });
+            setPublishModalPlaylist(pl);
+            setPublishModalOpen(true);
         }
-        setPublishModalPlaylist(pl);
-        setPublishModalOpen(true);
     };
 
     const handlePublishSubmit = async () => {
@@ -2131,10 +2123,10 @@ export default function MusicSidebar({
                                         onClick={e => { e.stopPropagation(); handleTogglePublish(pl); }}
                                         disabled={publishingId === pl.id}
                                         title={publishedIds.has(pl.id)
-                                            ? (isVietnamese ? 'Hủy công khai' : 'Unpublish channel')
+                                            ? (isVietnamese ? 'Đang công khai — bấm để gỡ xuống' : 'Public — click to unpublish')
                                             : (isVietnamese ? 'Đăng làm kênh công khai' : 'Publish as channel')}
                                         className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${publishedIds.has(pl.id)
-                                            ? 'text-indigo-400 bg-indigo-500/15 hover:bg-indigo-500/25'
+                                            ? 'text-indigo-400 bg-indigo-500/20 ring-1 ring-indigo-500/40 hover:bg-rose-500/20 hover:text-rose-400 hover:ring-rose-500/30'
                                             : (effectiveDark ? 'text-slate-400/60 hover:text-indigo-300 hover:bg-white/[0.08]' : 'text-slate-400 hover:text-indigo-500 hover:bg-slate-100')
                                             }`}
                                     >
