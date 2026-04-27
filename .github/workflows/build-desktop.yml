@@ -46,7 +46,7 @@ jobs:
 
           # Windows x64
           - platform: windows-latest
-            args: '--bundles nsis,msix'
+            args: '--bundles nsis,msi'
             rust_target: ''
             artifact_name: WordAI-Music-windows
             bundle_path: src-tauri/target/release/bundle

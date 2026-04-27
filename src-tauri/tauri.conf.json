@@ -57,9 +57,6 @@
       "nsis": {
         "installMode": "perMachine",
         "displayLanguageSelector": false
-      },
-      "msix": {
-        "publisherDisplayName": "WynAI"
       }
     }
   }
