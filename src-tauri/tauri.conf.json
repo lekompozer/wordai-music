@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "WynAI Music",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "identifier": "pro.wordai.music",
   "build": {
     "frontendDist": "../out",
@@ -55,8 +55,11 @@
     "windows": {
       "wix": {},
       "nsis": {
-        "installMode": "currentUser",
+        "installMode": "perMachine",
         "displayLanguageSelector": false
+      },
+      "msix": {
+        "publisherDisplayName": "WynAI"
       }
     }
   }
